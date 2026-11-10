@@ -78,14 +78,14 @@ textarea.in{height:auto;min-height:64px;padding:10px 12px;resize:vertical}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 <script>
-const VERSAO_APP="1.1";
+const VERSAO_APP="1.2";
 const KEY="almox_v1";
 const API_PADRAO=(window.ALMOX_API||"");
 const TIPO_INFO={"Saída":{ic:"⬆",txt:"Saída",pes:"Quem retirou (colaborador ou setor)",ob:true},"Entrada":{ic:"⬇",txt:"Entrada",pes:"Fornecedor (opcional)",ob:false},
   "Devolução":{ic:"↩",txt:"Devolução",pes:"Quem devolveu",ob:true},"Ajuste (+)":{ic:"+",txt:"Ajuste (+)",pes:"",ob:false},"Ajuste (-)":{ic:"−",txt:"Ajuste (−)",pes:"",ob:false}};
 const NIV={negativo:"Negativo",zerado:"Zerado",critico:"Crítico",atencao:"Atenção",ok:""};
 let S=carregar();
-let UI={tela:"",pin:"",uSel:"",busca:"",cat:"",erro:"",enviando:false,ret:"",res:null,ult:null,estId:"",estMot:""};
+let UI={cf:{},bc:"",ch:null,cadId:"",tela:"",pin:"",uSel:"",busca:"",cat:"",erro:"",enviando:false,ret:"",res:null,ult:null,estId:"",estMot:""};
 function novo(){return {cfg:{api:API_PADRAO,chave:"",dev:""},users:[],itens:[],pessoas:[],cadEm:"",user:null,lote:null}}
 function carregar(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.cfg){if(!v.cfg.api)v.cfg.api=API_PADRAO;return Object.assign(novo(),v)}}catch(e){}return novo()}
 function salvar(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -118,9 +118,9 @@ function hd(t,voltar){const u=S.user?`<div class="u">${esc(S.user.nome)}<br><but
   return `<div class="hd">${voltar?`<button class="back" data-act="ir" data-v="${voltar}">‹</button>`:`<img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()">`}<div class="t">${esc(t)}</div>${u}</div>`}
 function render(){
   if(!online())UI.tela="config";else if(!S.user&&UI.tela!=="config")UI.tela="login";else if(!UI.tela)UI.tela="inicio";
-  const f={config:tConfig,login:tLogin,inicio:tInicio,lote:tLote,itens:tItens,ok:tOk,criticos:tCriticos,ultimos:tUltimos,saldo:tItens}[UI.tela]||tInicio;
+  const f={config:tConfig,login:tLogin,inicio:tInicio,lote:tLote,itens:tItens,ok:tOk,criticos:tCriticos,ultimos:tUltimos,saldo:tItens,cad:tCad,cadNovo:tCadNovo,cadEd:tCadEd}[UI.tela]||tInicio;
   $("app").innerHTML=f();
-  if(UI.tela==="itens"||UI.tela==="saldo")lista();if(UI.tela==="lote")listaLote();
+  if(UI.tela==="itens"||UI.tela==="saldo")lista();if(UI.tela==="lote")listaLote();if(UI.tela==="cad")listaCad();
   if(UI.foco){const el=$(UI.foco);UI.foco="";if(el){el.focus();if(el.select)try{el.select()}catch(_){}}}
 }
 function tConfig(){return hd("Configurar aparelho")+`<div class="body">
@@ -150,6 +150,7 @@ function tInicio(){const c=criticos(),a=atencao();
   </div>
   ${S.lote&&S.lote.itens.length?`<div class="warn" data-act="ir" data-v="lote" style="cursor:pointer">Há um lançamento de <b>${esc(S.lote.tipo)}</b> não enviado (${S.lote.itens.length} item(ns)). Toque para continuar.</div>`:""}
   <div style="display:flex;gap:10px;margin-top:16px"><button class="btn sec sm" data-act="ultimos" style="flex:1">Últimos lançamentos</button><button class="btn sec sm" data-act="novo" data-v="Ajuste (+)" style="flex:1">Ajuste de inventário</button></div>
+  <button class="btn sec sm" data-act="cadLista" style="width:100%;margin-top:10px">📋 Cadastro de produtos</button>
   <div class="muted" style="margin-top:14px;text-align:center">Estoque atualizado ${S.cadEm?new Date(S.cadEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"} · <button class="linkbtn" data-act="atualizar">atualizar</button></div>
   </div><div class="ver">versão ${VERSAO_APP}</div>`}
 function tLote(){const L=S.lote;const T=TIPO_INFO[L.tipo];const aj=L.tipo.startsWith("Ajuste");
@@ -208,12 +209,69 @@ function tUltimos(){const L=UI.ult;
   ${UI.estId===m.id?`<div class="lbl">Motivo do estorno</div><input class="in" id="estMot" autocomplete="off" placeholder="ex.: lançado em dobro"><div class="row2" style="margin-top:8px"><button class="btn sm" data-act="estOk" style="width:100%">Confirmar estorno</button><button class="btn sec sm" data-act="est" data-v="" style="width:100%">Cancelar</button></div>`:""}</div>`).join("")}
   ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}<div class="muted" style="margin-top:10px">Estornar cancela o lançamento e devolve o saldo. Fica registrado quem estornou e o motivo.</div></div>`}
 
+
+/* ===================== CADASTRO DE PRODUTOS (almoxarife) ===================== */
+const UNID=["UNID","PAR","PCTS","CX","RL","KIT","FR","KG","L","M"];
+const catsApp=()=>[...new Set(S.itens.map(r=>r[2]))].sort();
+function prevIdApp(cat){if(!cat)return "—";const c={};S.itens.forEach(r=>{if(r[2]!==cat)return;const m=/^([A-Z]+)-\d+$/.exec(r[0]);if(m)c[m[1]]=(c[m[1]]||0)+1});
+  const pre=Object.keys(c).sort((a,b)=>c[b]-c[a])[0]||(semAc(cat).replace(/[^a-z]/g,"").toUpperCase().slice(0,4)||"ITEM");
+  let mx=0;S.itens.forEach(r=>{const m=new RegExp("^"+pre+"-(\\d+)$").exec(r[0]);if(m)mx=Math.max(mx,+m[1])});const n=mx+1;return pre+"-"+(n<10?"0"+n:n)}
+function tCad(){return hd("Cadastro de produtos","inicio")+`<div class="body">
+  <button class="btn" data-act="cadNovo">+ Cadastrar produto novo</button>
+  <div class="lbl" style="margin-top:16px"><b>Alterar um produto</b> – procure e toque nele</div>
+  <input class="in" id="bc" value="${esc(UI.bc||"")}" placeholder="nome, código ou endereço" autocomplete="off"><div id="lc" style="margin-top:8px"></div>
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}</div>`}
+function listaCad(){const el=$("lc");if(!el)return;const ws=semAc(UI.bc||"").trim().split(/\s+/).filter(Boolean);
+  if(!ws.length){el.innerHTML=`<div class="muted">Digite parte do nome para encontrar o produto.</div>`;return}
+  const L=S.itens.map(I).filter(i=>ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR"));
+  el.innerHTML=L.slice(0,20).map(i=>`<div class="card" data-act="cadEd" data-v="${esc(i.id)}"><div class="l1"><div><div class="nm">${esc(i.p)}</div><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · "+esc(i.end):""} · ${esc(i.un)}${i.min?" · mín. "+nf(i.min):""}</div></div><span class="chip">editar ›</span></div></div>`).join("")||`<div class="empty">Nenhum produto encontrado. Se for novo, toque em “Cadastrar produto novo”.</div>`}
+function campoCad(f){const cats=catsApp();const nova=f.Categoria==="__nova";
+  return `<div class="lbl">Nome do produto *</div><input class="in" id="c_Produto" value="${esc(f.Produto||"")}" autocomplete="off" placeholder="ex.: Luva nitrílica tamanho G">
+  <div class="lbl">Categoria *</div><select class="sel" id="c_Categoria"><option value="">escolha…</option>${cats.map(c=>`<option ${f.Categoria===c?"selected":""}>${esc(c)}</option>`).join("")}<option value="__nova" ${nova?"selected":""}>+ nova categoria…</option></select>
+  ${nova?`<input class="in" id="c_CatNova" value="${esc(f.CatNova||"")}" placeholder="nome da nova categoria" style="margin-top:8px" autocomplete="off">`:""}
+  <div class="row2"><div><div class="lbl">Endereço</div><input class="in" id="c_Endereco" value="${esc(f.Endereco||"")}" placeholder="ex.: E-07" autocomplete="off"></div>
+  <div><div class="lbl">Unidade</div><input class="in" id="c_Unidade" list="dlu" value="${esc(f.Unidade||"UNID")}" autocomplete="off"><datalist id="dlu">${UNID.map(u=>`<option value="${u}">`).join("")}</datalist></div></div>
+  <div class="lbl">Estoque mínimo (para o alerta de crítico)</div><input class="in" id="c_EstoqueMinimo" type="number" inputmode="decimal" min="0" step="any" value="${esc(f.EstoqueMinimo??"")}" placeholder="deixe vazio se não quiser alerta">`}
+function tCadNovo(){const f=UI.cf;const cat=f.Categoria==="__nova"?(f.CatNova||"").trim().toUpperCase():f.Categoria;
+  return hd("Produto novo","cad")+`<div class="body">${campoCad(f)}
+  <div class="lbl">Saldo inicial (o que tem na prateleira agora)</div><input class="in" id="c_saldo" type="number" inputmode="decimal" min="0" step="any" value="${esc(f.saldo||"")}" placeholder="0">
+  <div class="lbl">Observação (opcional)</div><input class="in" id="c_Observacao" value="${esc(f.Observacao||"")}" placeholder="ex.: CA 12345, caixa com 12" autocomplete="off">
+  <div class="info">Código automático: <b id="cprev">${esc(prevIdApp(cat))}</b> · o cadastro fica registrado com o seu nome.</div>
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}</div>
+  <div class="foot"><button class="btn" data-act="cadSalvarNovo" ${UI.enviando?"disabled":""}>${UI.enviando?"Salvando…":"Cadastrar produto"}</button></div>`}
+function tCadEd(){const f=UI.cf;const it=item(UI.cadId)||{id:UI.cadId,saldo:0,un:""};
+  return hd("Alterar "+it.id,"cad")+`<div class="body"><div class="muted">Saldo atual: <b>${nf(it.saldo)} ${esc(it.un)}</b> · o código <b>${esc(it.id)}</b> não muda; o histórico de entradas e saídas continua ligado a ele.</div>
+  ${campoCad(f)}
+  <div class="lbl">Ativo</div><select class="sel" id="c_Ativo"><option ${f.Ativo!=="Não"?"selected":""}>Sim</option><option ${f.Ativo==="Não"?"selected":""} value="Não">Não (some do app, histórico fica)</option></select>
+  <div class="lbl">Motivo da alteração</div><input class="in" id="c_motivo" value="${esc(f.motivo||"")}" placeholder="ex.: nome errado, mudou de prateleira" autocomplete="off">
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}
+  <div class="lbl" style="margin-top:18px"><b>Histórico deste produto</b></div>
+  ${!UI.ch?`<div class="muted">Carregando…</div>`:!UI.ch.length?`<div class="muted">Nenhuma alteração registrada ainda.</div>`:`<div class="cart">${UI.ch.map(h=>`<div class="ci"><div class="x"><div class="nm" style="font-size:14px">${esc(h[1])}${h[2]?" · "+esc(h[2]):""}</div>
+    <div class="muted">${h[2]?`<span style="color:#9A3D00">${esc(h[3])}</span> → <b>${esc(h[4])}</b> · `:""}${esc(h[5])} · ${h[0].slice(8,10)}/${h[0].slice(5,7)} ${h[0].slice(11,16)}${h[6]?" · "+esc(h[6]):""}</div></div></div>`).join("")}</div>`}
+  </div><div class="foot"><button class="btn" data-act="cadSalvarEd" ${UI.enviando?"disabled":""}>${UI.enviando?"Salvando…":"Salvar alteração"}</button></div>`}
+
 /* ===================== AÇÕES ===================== */
 function ler(){const L=S.lote;if(!L||UI.tela!=="lote")return;const g=id=>{const e=$(id);return e?e.value:null};
   if(g("pes")!==null)L.pessoa=g("pes");if(g("dt")!==null)L.data=g("dt");if(g("nf")!==null)L.nf=g("nf");if(g("obs")!==null)L.obs=g("obs");
   document.querySelectorAll(".qin").forEach(e=>{L.itens[+e.dataset.i].q=e.value});salvar()}
 function ir(t){ler();UI.erro="";if(t==="itens"||t==="saldo"){UI.busca="";UI.foco="bi";if(t==="saldo")UI.cat=""}UI.tela=t;render();window.scrollTo(0,0)}
 const AC={
+  cadLista:()=>{UI.bc="";UI.erro="";ir("cad");const b=$("bc");if(b)b.focus()},
+  cadNovo:()=>{UI.cf={Unidade:"UNID"};UI.erro="";ir("cadNovo");const b=$("c_Produto");if(b)b.focus()},
+  cadEd:async v=>{const i=item(v);UI.cadId=v;UI.cf={Produto:i.p,Categoria:i.cat,Endereco:i.end,Unidade:i.un,EstoqueMinimo:i.min||"",Ativo:"Sim",motivo:""};UI.ch=null;UI.erro="";ir("cadEd");
+    try{UI.ch=(await api({a:"histItem",id:v})).hist}catch(e){UI.ch=[]}if(UI.tela==="cadEd"&&UI.cadId===v)render()},
+  cadSalvarNovo:async()=>{const f=UI.cf;const cat=f.Categoria==="__nova"?(f.CatNova||"").trim():f.Categoria;UI.erro="";
+    if(!(f.Produto||"").trim())UI.erro="Escreva o nome do produto.";else if(!cat)UI.erro="Escolha a categoria.";if(UI.erro)return render();
+    UI.enviando=true;render();
+    try{const r=await api({a:"item",op:"novo",uid:S.user.id,unome:S.user.nome,ap:S.cfg.dev,saldoInicial:f.saldo||0,motivo:f.Observacao||"",item:{Produto:f.Produto,Categoria:cat,Endereco:f.Endereco||"",Unidade:f.Unidade||"UNID",EstoqueMinimo:f.EstoqueMinimo||"",Observacao:f.Observacao||""}});
+      UI.enviando=false;await baixar(false);toast("Cadastrado: "+r.id+" – "+f.Produto.trim());UI.bc=f.Produto.trim();UI.cf={};ir("cad")}
+    catch(e){UI.enviando=false;UI.erro=e.message;render()}},
+  cadSalvarEd:async()=>{const f=UI.cf;const id=UI.cadId;UI.erro="";const cat=f.Categoria==="__nova"?(f.CatNova||"").trim():f.Categoria;
+    if(!(f.Produto||"").trim())UI.erro="O nome não pode ficar vazio.";else if(!cat)UI.erro="Escolha a categoria.";if(UI.erro)return render();
+    UI.enviando=true;render();
+    try{const r=await api({a:"item",op:"editar",id:id,uid:S.user.id,unome:S.user.nome,ap:S.cfg.dev,motivo:f.motivo||"",item:{Produto:f.Produto,Categoria:cat,Endereco:f.Endereco||"",Unidade:f.Unidade||"UNID",EstoqueMinimo:f.EstoqueMinimo??"",Ativo:f.Ativo||"Sim"}});
+      UI.enviando=false;await baixar(false);toast(r.nada?"Nada foi alterado.":"Alteração salva ("+r.alterados+" campo(s)).");if(f.Ativo==="Não"){UI.bc="";ir("cad")}else AC.cadEd(id)}
+    catch(e){UI.enviando=false;UI.erro=e.message;render()}},
   ir:v=>ir(v),
   sair:()=>{S.user=null;UI.uSel="";salvar();ir("login")},
   atualizar:async()=>{toast("Atualizando…");await baixar(true);render()},
@@ -258,8 +316,11 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(
 document.addEventListener("input",e=>{const t=e.target;
   if(t.id==="bi"){UI.busca=t.value;lista()}
   if(t.id==="bl"){UI.bl=t.value;listaLote()}
+  if(t.id==="bc"){UI.bc=t.value;listaCad()}
+  if(t.id&&t.id.startsWith("c_")){UI.cf[t.id.slice(2)]=t.value;if(t.id==="c_CatNova"){const e2=$("cprev");if(e2)e2.textContent=prevIdApp(t.value.trim().toUpperCase())}}
   if(t.id==="busca"){UI.busca=t.value;const p=t.selectionStart;render();const n=$("busca");if(n){n.focus();n.setSelectionRange(p,p)}}
   if(t.classList&&t.classList.contains("qin")){ler();S.lote.id="";const d=$("dp"+t.dataset.i);if(d){const v=Number(d.dataset.s)+Number(d.dataset.g)*(Number(String(t.value).replace(",","."))||0);d.textContent=nf(v);d.style.color=v<0?"var(--err)":"inherit"}}});
+document.addEventListener("change",e=>{const t=e.target;if(t.id&&t.id.startsWith("c_")){UI.cf[t.id.slice(2)]=t.value;if(t.id==="c_Categoria")render()}});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="bl"){const c=document.querySelector("#rl [data-act=pick]");if(c){e.preventDefault();AC.pick(c.dataset.v)}}if(e.key==="Enter"&&e.target.id==="pin")AC.entrar();if(e.key==="Enter"&&e.target.id==="estMot")AC.estOk()});
 /* link de instalação: .../ALMOXARIFADO/#chave=XXXX (a parte depois do # não vai para o GitHub) */
 (function(){try{const h=new URLSearchParams(location.hash.slice(1));const k=(h.get("chave")||"").trim();if(!k)return;
