@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Almoxarifado – Painel do estoque</title>
+<script src="config.js"></script>
+<style>
+:root{--lime:#CDFF00;--limeD:#708C00;--limeL:#F3FFCC;--dark:#1C1E1A;--bg:#F5F6F2;--bd:#D6DAD0;--tx:#1C1E1A;--tx2:#686E64;--okL:#D6F0E0;--warn:#E6A800;--warnL:#FFF3CD;--err:#DC3545;--errL:#FFE4E6}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;color:var(--tx);background:var(--bg)}
+button,input,select{font:inherit;color:inherit}
+.hd{background:var(--dark);color:var(--lime);display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:5px solid var(--lime);position:sticky;top:0;z-index:3;flex-wrap:wrap}
+.hd .logo{height:24px}
+.hd h1{font-size:20px;margin:0;font-weight:600;flex:1;white-space:nowrap}
+.hd .at{font-size:13px;color:#C9CEC2}
+.hd button{background:none;border:1px solid #555;color:#E8EBE3;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:14px}
+.tabs{display:flex;gap:4px;padding:12px 22px 0;flex-wrap:wrap}
+.tab{border:1px solid var(--bd);border-bottom:0;background:#fff;padding:10px 18px;border-radius:10px 10px 0 0;cursor:pointer;font-weight:600;font-size:15px}
+.tab.on{background:var(--dark);color:var(--lime);border-color:var(--dark)}
+.tab .b{background:var(--err);color:#fff;border-radius:10px;padding:1px 7px;font-size:12px;margin-left:6px}
+.wrap{padding:16px 22px 40px;max-width:1500px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px 14px;border-left:6px solid var(--bd)}
+.kpi .v{font-size:30px;font-weight:700;line-height:1.1}.kpi .l{font-size:13px;color:var(--tx2)}
+.kpi.r{border-left-color:var(--err)}.kpi.r .v{color:var(--err)}.kpi.a{border-left-color:var(--warn)}.kpi.g{border-left-color:var(--limeD)}
+.box{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.box h2{font-size:17px;margin:0 0 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.box h2 .sp{flex:1}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.in,.sel{height:38px;border:1px solid var(--bd);border-radius:8px;background:#fff;padding:0 10px;font-size:14px}
+.btn{height:38px;border-radius:8px;border:0;background:var(--lime);font-weight:600;cursor:pointer;padding:0 14px;font-size:14px}
+.btn.sec{background:#fff;border:1px solid var(--dark)}
+.tw{overflow:auto;max-height:68vh;border:1px solid var(--bd);border-radius:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;background:#fff}
+th{position:sticky;top:0;background:#EEF0EA;text-align:left;font-size:11.5px;text-transform:uppercase;color:var(--tx2);padding:8px;white-space:nowrap;cursor:pointer;user-select:none}
+td{padding:7px 8px;border-top:1px solid #EDEFE9;vertical-align:top}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr:hover td{background:#FAFBF7}
+.sd{font-size:12px;font-weight:600;padding:2px 9px;border-radius:10px;white-space:nowrap;display:inline-block}
+.n-ok{background:var(--okL)}.n-atencao{background:var(--warnL);color:#7A5800}.n-critico{background:#FFE0CC;color:#9A3D00}.n-zerado,.n-negativo{background:var(--err);color:#fff}
+.muted{color:var(--tx2);font-size:13px}
+.warn{background:var(--warnL);border:1px solid var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px}
+.err{background:var(--errL);border:1px solid var(--err);border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.g2{grid-template-columns:1fr}.hd h1{font-size:17px}}
+.hb{display:grid;grid-template-columns:minmax(120px,38%) 1fr 70px;gap:8px;align-items:center;font-size:13.5px;padding:3px 0}
+.hb .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .r{height:16px;background:var(--lime);border-radius:4px;min-width:2px}
+.hb .v{text-align:right;font-weight:600}
+.gate{max-width:380px;margin:12vh auto;background:#fff;border:1px solid var(--bd);border-radius:14px;padding:24px}
+.gate h2{margin:0 0 14px}
+.gate .in{width:100%;height:46px;font-size:16px;margin-bottom:12px}
+.gate .btn{width:100%;height:48px;font-size:16px}
+.tipo-s{color:#9A3D00;font-weight:600}.tipo-e{color:var(--limeD);font-weight:600}
+.est td{opacity:.5;text-decoration:line-through}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const KEY="almox_painel_v1";
+const API=(window.ALMOX_API||"");
+let P={senha:"",d:null,tab:"criticos",de:"",ate:"",f:{},ord:{}};
+try{const v=JSON.parse(localStorage.getItem(KEY)||"{}");P.senha=v.senha||"";P.tab=v.tab||"criticos"}catch(e){}
+const salvar=()=>{try{localStorage.setItem(KEY,JSON.stringify({senha:P.senha,tab:P.tab}))}catch(e){}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nf=v=>(Number(v)||0).toLocaleString("pt-BR",{maximumFractionDigits:2});
+const semAc=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const dBR=s=>s?String(s).slice(0,10).split("-").reverse().join("/"):"";
+const NIV={negativo:"Negativo",zerado:"Zerado",critico:"Crítico",atencao:"Atenção",ok:"OK"};
+const ORD_NIV={negativo:0,zerado:1,critico:2,atencao:3,ok:4};
+const SAIDA=t=>t==="Saída"||t==="Ajuste (-)";
+/* itens: [id, produto, cat, end, un, saldo, min, nível, c30, c90, últimaSaída, sugestão, ativo] */
+const I=r=>({id:r[0],p:r[1],cat:r[2],end:r[3],un:r[4],saldo:r[5],min:r[6],nv:r[7],c30:r[8],c90:r[9],ult:r[10],sug:r[11],ativo:r[12],cob:r[8]>0?Math.floor(r[5]/(r[8]/30)):null});
+/* movs: [id, data, tipo, item, produto, cat, qtd, un, pessoa, nf, obs, estoquista, status, origem] */
+const M=r=>({id:r[0],d:r[1],t:r[2],item:r[3],p:r[4],cat:r[5],q:r[6],un:r[7],pes:r[8],nf:r[9],obs:r[10],est:r[11],st:r[12],org:r[13]});
+async function api(body){const r=await fetch(API,{method:"POST",body:JSON.stringify(Object.assign({k:P.senha},body)),redirect:"follow"});const j=await r.json();if(!j.ok)throw new Error(j.erro||"Erro");return j}
+async function carregar(){try{const j=await api({a:"painel",de:P.de,ate:P.ate});P.d=j;P.de=j.de;P.ate=j.ate;P.erro="";render()}
+  catch(e){if(/negado/i.test(e.message)){P.senha="";salvar();P.erro="Senha incorreta."}else P.erro=e.message;render()}}
+const sd=i=>`<span class="sd n-${i.nv}">${NIV[i.nv]}</span>`;
+function render(){
+  if(!P.senha)return $("app").innerHTML=`<div class="gate"><img src="logo.png" alt="" style="height:26px;filter:invert(1)" onerror="this.remove()"><h2>Painel do estoque</h2>
+    <input class="in" id="senha" type="password" placeholder="Senha do painel" autocomplete="current-password">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}<button class="btn" data-act="entrar">Entrar</button></div>`;
+  if(!P.d)return $("app").innerHTML=hd()+`<div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:`<p class="muted">Carregando…</p>`}</div>`;
+  const it=P.d.itens.map(I).filter(i=>i.ativo);const crit=it.filter(i=>["critico","zerado","negativo"].includes(i.nv));
+  const tabs=[["criticos","Críticos",crit.length],["estoque","Estoque"],["movimentos","Movimentos"],["consumo","Consumo"]];
+  $("app").innerHTML=hd()+`<div class="tabs">${tabs.map(t=>`<div class="tab ${P.tab===t[0]?"on":""}" data-act="tab" data-v="${t[0]}">${t[1]}${t[2]?`<span class="b">${t[2]}</span>`:""}</div>`).join("")}</div>
+   <div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}${{criticos:vCrit,estoque:vEst,movimentos:vMov,consumo:vCons}[P.tab](it)}</div>`;
+  if(P.foco){const e=$(P.foco);if(e){e.focus();const v=e.value;e.value="";e.value=v}P.foco=""}
+}
+const hd=()=>`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Painel do estoque</h1>
+  <span class="at">${P.d?"atualizado "+dBR(P.d.agora)+" "+P.d.agora.slice(11,16):""}</span><button data-act="recarregar">Atualizar</button><button data-act="sair">Sair</button></div>`;
+function kpis(it){const c=it.filter(i=>["critico","zerado"].includes(i.nv)).length,a=it.filter(i=>i.nv==="atencao").length,n=it.filter(i=>i.nv==="negativo").length,m=it.filter(i=>i.min>0).length;
+  return `<div class="kpis"><div class="kpi r"><div class="v">${c}</div><div class="l">no mínimo ou abaixo</div></div><div class="kpi a"><div class="v">${a}</div><div class="l">em atenção (até ${P.d.pct}% do mínimo)</div></div>
+  <div class="kpi ${n?"r":""}"><div class="v">${n}</div><div class="l">com saldo negativo (ajustar)</div></div><div class="kpi g"><div class="v">${m}<span style="font-size:16px;color:var(--tx2)"> / ${it.length}</span></div><div class="l">itens com estoque mínimo definido</div></div></div>`}
+/* tabela genérica com ordenação por coluna */
+function tabela(nome,cols,rows){const o=P.ord[nome];if(o){const c=cols[o.c];rows=rows.slice().sort((a,b)=>{const x=c.s?c.s(a):c.v(a),y=c.s?c.s(b):c.v(b);return (typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"pt-BR"))*o.d})}
+  return `<div class="tw"><table><tr>${cols.map((c,i)=>`<th class="${c.n?"n":""}" data-act="ord" data-v="${nome}:${i}">${c.h}${o&&o.c===i?(o.d>0?" ▲":" ▼"):""}</th>`).join("")}</tr>
+  ${rows.map(r=>`<tr class="${r.st==="Estornado"?"est":""}">${cols.map(c=>`<td class="${c.n?"n":""}">${c.f?c.f(r):esc(c.v(r))}</td>`).join("")}</tr>`).join("")||`<tr><td colspan="${cols.length}" class="muted" style="padding:18px;text-align:center">Nada para mostrar.</td></tr>`}</table></div>`}
+const colItem={h:"Item",v:i=>i.p,f:i=>`<b>${esc(i.p)}</b><div class="muted">${esc(i.id)}</div>`};
+const colSit={h:"Situação",v:i=>ORD_NIV[i.nv],f:sd};
+function vCrit(it){const L=it.filter(i=>i.nv!=="ok").sort((a,b)=>ORD_NIV[a.nv]-ORD_NIV[b.nv]||a.saldo/(a.min||1)-b.saldo/(b.min||1));
+  const sem=it.filter(i=>!(i.min>0)&&i.sug>0).sort((a,b)=>b.c90-a.c90).slice(0,15);
+  return (P.d.emails?"":`<div class="warn"><b>Alerta por e-mail desligado.</b> Na planilha, aba CONFIG, escreva os e-mails em <b>ALERTA_EMAILS</b> e use o menu <b>Almoxarifado › Ativar alerta diário</b>.</div>`)+kpis(it)+
+  `<div class="box"><h2>Itens para repor<span class="sp"></span><button class="btn" data-act="xlsCrit">Baixar lista (Excel)</button></h2>
+  ${tabela("crit",[colSit,colItem,{h:"Categoria",v:i=>i.cat},{h:"Endereço",v:i=>i.end},{h:"Saldo",n:1,v:i=>i.saldo,f:i=>`<b>${nf(i.saldo)}</b> ${esc(i.un)}`},{h:"Mínimo",n:1,v:i=>i.min,f:i=>nf(i.min)},
+   {h:"Falta p/ mínimo",n:1,v:i=>Math.max(0,i.min-i.saldo),f:i=>nf(Math.max(0,i.min-i.saldo))},{h:"Saída 30 dias",n:1,v:i=>i.c30,f:i=>nf(i.c30)},{h:"Dura (dias)",n:1,v:i=>i.cob??9e9,f:i=>i.cob==null?"—":i.cob},{h:"Última saída",v:i=>i.ult,f:i=>dBR(i.ult)}],L)}
+  <div class="muted" style="margin-top:8px">“Dura” = saldo ÷ média diária de saída dos últimos 30 dias. O mínimo de cada item fica na aba CAD_Itens (coluna EstoqueMinimo).</div></div>
+  <div class="g2"><div class="box"><h2>Sugestão de mínimo para itens sem mínimo</h2>
+  <div class="muted" style="margin-bottom:8px">Itens com saída nos últimos 90 dias e sem mínimo definido. Sugestão = consumo de ${P.d.cobertura} dias. Para acompanhar, copie o valor para EstoqueMinimo na planilha.</div>
+  ${tabela("sug",[colItem,{h:"Saldo",n:1,v:i=>i.saldo,f:i=>nf(i.saldo)+" "+esc(i.un)},{h:"Saída 90 d",n:1,v:i=>i.c90,f:i=>nf(i.c90)},{h:"Sugestão",n:1,v:i=>i.sug,f:i=>`<b>${nf(i.sug)}</b>`}],sem)}</div>
+  <div class="box"><h2>Últimos alertas enviados</h2>${P.d.alertas.length?tabela("al",[{h:"Quando",v:a=>a[0],f:a=>dBR(a[0])+" "+String(a[0]).slice(11,16)},{h:"Tipo",v:a=>a[1]},{h:"Item",v:a=>a[3]},{h:"Saldo",n:1,v:a=>a[4],f:a=>nf(a[4])},{h:"Mín.",n:1,v:a=>a[5],f:a=>nf(a[5])},{h:"Situação",v:a=>a[6]}],P.d.alertas):`<div class="muted">Nenhum alerta ainda.</div>`}</div></div>`}
+function filtrosItens(){const cats=[...new Set(P.d.itens.map(r=>r[2]))].sort();const f=P.f;
+  return `<input class="in" id="fb" placeholder="Procurar item, código ou endereço" value="${esc(f.b||"")}" style="min-width:260px">
+  <select class="sel" id="fc"><option value="">Todas as categorias</option>${cats.map(c=>`<option ${f.c===c?"selected":""}>${esc(c)}</option>`).join("")}</select>`}
+function itensFiltrados(it){const f=P.f;const ws=semAc(f.b).split(/\s+/).filter(Boolean);
+  return it.filter(i=>(!f.c||i.cat===f.c)&&(!f.s||(f.s==="com"?i.saldo>0:f.s==="zero"?i.saldo<=0:i.min>0))&&ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w)))}
+function vEst(it){const L=itensFiltrados(it);const f=P.f;
+  return kpis(it)+`<div class="box"><h2>Saldo de estoque<span class="sp"></span><span class="muted">${L.length} itens</span><button class="btn" data-act="xlsEst">Baixar estoque (Excel)</button></h2>
+  <div class="bar">${filtrosItens()}<select class="sel" id="fs"><option value="">Todos os saldos</option><option value="com" ${f.s==="com"?"selected":""}>Com saldo</option><option value="zero" ${f.s==="zero"?"selected":""}>Zerados / negativos</option><option value="min" ${f.s==="min"?"selected":""}>Com mínimo definido</option></select></div>
+  ${tabela("est",[colItem,{h:"Categoria",v:i=>i.cat},{h:"Endereço",v:i=>i.end},{h:"Saldo",n:1,v:i=>i.saldo,f:i=>`<b>${nf(i.saldo)}</b> ${esc(i.un)}`},{h:"Mínimo",n:1,v:i=>i.min,f:i=>i.min?nf(i.min):"—"},colSit,{h:"Saída 30 d",n:1,v:i=>i.c30,f:i=>nf(i.c30)},{h:"Dura (dias)",n:1,v:i=>i.cob??9e9,f:i=>i.cob==null?"—":i.cob},{h:"Última saída",v:i=>i.ult,f:i=>dBR(i.ult)}],L)}</div>`}
+function periodo(){return `<label class="muted">De</label><input class="in" type="date" id="pde" value="${P.de}"><label class="muted">até</label><input class="in" type="date" id="pate" value="${P.ate}"><button class="btn sec" data-act="periodo">Aplicar período</button>`}
+function movsFiltrados(){const f=P.f;const ws=semAc(f.b).split(/\s+/).filter(Boolean);
+  return P.d.movs.map(M).filter(m=>(!f.c||m.cat===f.c)&&(!f.t||m.t===f.t)&&ws.every(w=>semAc(m.p+" "+m.item+" "+m.pes+" "+m.nf+" "+m.est).includes(w)))}
+function vMov(){const L=movsFiltrados().reverse();const tipos=[...new Set(P.d.movs.map(r=>r[2]))];const cats=[...new Set(P.d.itens.map(r=>r[2]))].sort();const f=P.f;
+  return `<div class="box"><h2>Movimentos<span class="sp"></span><span class="muted">${L.length} lançamentos</span><button class="btn" data-act="xlsMov">Baixar movimentos (Excel)</button></h2>
+  <div class="bar">${periodo()}</div><div class="bar"><input class="in" id="fb" placeholder="Procurar item, pessoa, NF ou estoquista" value="${esc(f.b||"")}" style="min-width:300px">
+  <select class="sel" id="fc"><option value="">Todas as categorias</option>${cats.map(c=>`<option ${f.c===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+  <select class="sel" id="ft"><option value="">Todos os tipos</option>${tipos.map(t=>`<option ${f.t===t?"selected":""}>${esc(t)}</option>`).join("")}</select></div>
+  ${tabela("mov",[{h:"Data",v:m=>m.d,f:m=>dBR(m.d)},{h:"Tipo",v:m=>m.t,f:m=>`<span class="${SAIDA(m.t)?"tipo-s":"tipo-e"}">${esc(m.t)}</span>${m.st==="Estornado"?' <span class="muted">(estornado)</span>':""}`},{h:"Item",v:m=>m.p,f:m=>`${esc(m.p)}<div class="muted">${esc(m.item)}</div>`},{h:"Qtd",n:1,v:m=>m.q,f:m=>nf(m.q)+" "+esc(m.un)},{h:"Pessoa / fornecedor",v:m=>m.pes},{h:"NF",v:m=>m.nf},{h:"Estoquista",v:m=>m.est},{h:"Obs.",v:m=>m.obs},{h:"ID",v:m=>m.id}],L)}</div>`}
+function barras(L,un){const mx=Math.max(1,...L.map(x=>x[1]));return L.map(x=>`<div class="hb"><div class="t" title="${esc(x[0])}">${esc(x[0])}</div><div><div class="r" style="width:${x[1]/mx*100}%"></div></div><div class="v">${nf(x[1])}${un?" "+un:""}</div></div>`).join("")||`<div class="muted">Sem saídas no período.</div>`}
+function vCons(){const L=P.d.movs.map(M).filter(m=>m.t==="Saída"&&m.st!=="Estornado");const f=P.f;
+  const soma=(k,v)=>{const o={};L.forEach(m=>{const kk=k(m);if(kk)o[kk]=(o[kk]||0)+v(m)});return Object.entries(o).sort((a,b)=>b[1]-a[1])};
+  const porItem=soma(m=>m.p+" ("+m.un+")",m=>m.q).slice(0,15),porCat=soma(m=>m.cat,()=>1),porPes=soma(m=>m.pes,()=>1).slice(0,15);
+  const pes=(f.pes||"").trim();const ficha=pes?L.filter(m=>semAc(m.pes)===semAc(pes)):[];const nomes=[...new Set(L.map(m=>m.pes).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+  return `<div class="box"><div class="bar" style="margin:0">${periodo()}<span class="muted">${L.length} saídas no período</span></div></div>
+  <div class="g2"><div class="box"><h2>Itens que mais saíram (quantidade)</h2>${barras(porItem)}</div>
+  <div class="box"><h2>Saídas por categoria (lançamentos)</h2>${barras(porCat)}<h2 style="margin-top:18px">Quem mais retirou (lançamentos)</h2>${barras(porPes)}</div></div>
+  <div class="box"><h2>Ficha por pessoa (EPI, fardamento e demais itens)<span class="sp"></span>${ficha.length?`<button class="btn" data-act="xlsFicha">Baixar ficha (Excel)</button>`:""}</h2>
+  <div class="bar"><input class="in" id="fpes" list="dlp" placeholder="Digite o nome" value="${esc(pes)}" style="min-width:300px"><datalist id="dlp">${nomes.map(n=>`<option value="${esc(n)}">`).join("")}</datalist><span class="muted">no período escolhido</span></div>
+  ${pes?tabela("ficha",[{h:"Data",v:m=>m.d,f:m=>dBR(m.d)},{h:"Item",v:m=>m.p},{h:"Categoria",v:m=>m.cat},{h:"Qtd",n:1,v:m=>m.q,f:m=>nf(m.q)+" "+esc(m.un)},{h:"Estoquista",v:m=>m.est}],ficha.slice().reverse()):""}</div>`}
+/* ---------------- Excel ---------------- */
+function baixar(nome,conteudo,tipo){const a=document.createElement("a");a.href=URL.createObjectURL(conteudo instanceof Blob?conteudo:new Blob([conteudo],{type:tipo+";charset=utf-8"}));a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+/* ---------------- Excel (.xlsx) sem biblioteca: zip "store" + XML ---------------- */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function zip(files){const enc=new TextEncoder();const parts=[],cent=[];let off=0;
+  const u16=v=>[v&255,(v>>8)&255],u32=v=>[v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255];
+  files.forEach(([name,txt])=>{const nb=enc.encode(name),db=enc.encode(txt),cr=crc32(db);
+    const lh=new Uint8Array([0x50,0x4b,3,4,...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(cr),...u32(db.length),...u32(db.length),...u16(nb.length),...u16(0)]);
+    parts.push(lh,nb,db);cent.push(new Uint8Array([0x50,0x4b,1,2,...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(cr),...u32(db.length),...u32(db.length),...u16(nb.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(off)]),nb);
+    off+=lh.length+nb.length+db.length});
+  const cs=cent.reduce((s,a)=>s+a.length,0);const end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(files.length),...u16(files.length),...u32(cs),...u32(off),0,0]);
+  return new Blob([...parts,...cent,end],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})}
+const xesc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,"");
+function colL(i){let s="";i++;while(i){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26)}return s}
+/* cols: [{h, w, t:"s"|"d"|"tm"|"n0"|"n1"|"i"}]; rows: arrays de valores (d = "aaaa-mm-dd", tm = "hh:mm") */
+function xlsx(nomeAba,cols,rows){const st={s:6,d:2,tm:3,n0:4,i:4,n1:7,h1:5};
+  const serD=s=>{const[y,m,d]=s.split("-").map(Number);return (Date.UTC(y,m-1,d)-Date.UTC(1899,11,30))/864e5};
+  const serT=s=>{const[h,m]=s.split(":").map(Number);return (h*60+m)/1440};
+  const cell=(r,c,v,t)=>{const ref=colL(c)+r,sx=st[t]||6;if(v===""||v==null)return `<c r="${ref}" s="${sx}"/>`;
+    if(t==="d")return `<c r="${ref}" s="${sx}"><v>${serD(v)}</v></c>`;if(t==="tm")return `<c r="${ref}" s="${sx}"><v>${serT(v)}</v></c>`;
+    if(t==="n0"||t==="n1"||t==="i"||t==="h1")return `<c r="${ref}" s="${sx}"><v>${Number(v)}</v></c>`;
+    return `<c r="${ref}" s="${sx}" t="inlineStr"><is><t xml:space="preserve">${xesc(v)}</t></is></c>`};
+  const head=`<row r="1" ht="20" customHeight="1">${cols.map((c,i)=>`<c r="${colL(i)}1" s="1" t="inlineStr"><is><t>${xesc(c.h)}</t></is></c>`).join("")}</row>`;
+  const body=rows.map((r,ri)=>`<row r="${ri+2}">${r.map((v,ci)=>cell(ri+2,ci,v,cols[ci].t)).join("")}</row>`).join("");
+  const last=colL(cols.length-1)+(rows.length+1);
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>${cols.map((c,i)=>`<col min="${i+1}" max="${i+1}" width="${c.w||12}" customWidth="1"/>`).join("")}</cols><sheetData>${head}${body}</sheetData><autoFilter ref="A1:${last}"/></worksheet>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="5"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/><numFmt numFmtId="165" formatCode="hh:mm:ss"/><numFmt numFmtId="166" formatCode="#,##0"/><numFmt numFmtId="167" formatCode="0.0"/><numFmt numFmtId="168" formatCode="#,##0.0"/></numFmts><fonts count="2"><font><sz val="10"/><name val="Arial"/></font><font><b/><sz val="10"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFCDFF00"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBFBFBF"/></left><right style="thin"><color rgb="FFBFBFBF"/></right><top style="thin"><color rgb="FFBFBFBF"/></top><bottom style="thin"><color rgb="FFBFBFBF"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="8"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/><xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/><xf numFmtId="167" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="168" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  return zip([["[Content_Types].xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ["_rels/.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xesc(nomeAba)}" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${xesc(nomeAba)}'!$A$1:$${last.replace(/(\d+)$/,"$$$1")}</definedName></definedNames></workbook>`],
+    ["xl/_rels/workbook.xml.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml",styles],["xl/worksheets/sheet1.xml",sheet]])}
+
+const hojeArq=()=>new Date().toISOString().slice(0,10);
+const XL={
+  xlsCrit:()=>{const L=P.d.itens.map(I).filter(i=>i.ativo&&i.nv!=="ok").sort((a,b)=>ORD_NIV[a.nv]-ORD_NIV[b.nv]);
+    baixar("Itens_para_repor_"+hojeArq()+".xlsx",xlsx("Repor",[{h:"Situação",w:12},{h:"ID",w:11},{h:"Produto",w:46},{h:"Categoria",w:18},{h:"Endereço",w:11},{h:"Unidade",w:9},{h:"Saldo",w:9,t:"n1"},{h:"Mínimo",w:9,t:"n1"},{h:"Falta p/ mínimo",w:14,t:"n1"},{h:"Saída 30 dias",w:13,t:"n1"},{h:"Dura (dias)",w:11,t:"i"}],
+      L.map(i=>[NIV[i.nv],i.id,i.p,i.cat,i.end,i.un,i.saldo,i.min,Math.max(0,i.min-i.saldo),i.c30,i.cob??""])))},
+  xlsEst:()=>{const L=itensFiltrados(P.d.itens.map(I).filter(i=>i.ativo));
+    baixar("Estoque_"+hojeArq()+".xlsx",xlsx("Estoque",[{h:"ID",w:11},{h:"Produto",w:46},{h:"Categoria",w:18},{h:"Endereço",w:11},{h:"Unidade",w:9},{h:"Saldo",w:9,t:"n1"},{h:"Mínimo",w:9,t:"n1"},{h:"Situação",w:11},{h:"Saída 30 dias",w:13,t:"n1"},{h:"Saída 90 dias",w:13,t:"n1"},{h:"Última saída",w:12,t:"d"}],
+      L.map(i=>[i.id,i.p,i.cat,i.end,i.un,i.saldo,i.min||"",NIV[i.nv],i.c30,i.c90,i.ult])))},
+  xlsMov:()=>{const L=movsFiltrados();
+    baixar("Movimentos_"+P.de+"_a_"+P.ate+".xlsx",xlsx("Movimentos",[{h:"ID",w:12},{h:"Data",w:11,t:"d"},{h:"Tipo",w:11},{h:"ID Produto",w:11},{h:"Produto",w:44},{h:"Categoria",w:17},{h:"Qtd",w:8,t:"n1"},{h:"Unidade",w:8},{h:"Pessoa/Fornecedor",w:26},{h:"NF",w:13},{h:"Estoquista",w:18},{h:"Status",w:10},{h:"Observação",w:30}],
+      L.map(m=>[m.id,m.d,m.t,m.item,m.p,m.cat,m.q,m.un,m.pes,m.nf,m.est,m.st,m.obs])))},
+  xlsFicha:()=>{const pes=P.f.pes.trim();const L=P.d.movs.map(M).filter(m=>m.t==="Saída"&&m.st!=="Estornado"&&semAc(m.pes)===semAc(pes));
+    baixar("Ficha_"+pes.replace(/\W+/g,"_")+".xlsx",xlsx("Ficha",[{h:"Data",w:11,t:"d"},{h:"ID Produto",w:11},{h:"Produto",w:46},{h:"Categoria",w:17},{h:"Qtd",w:8,t:"n1"},{h:"Unidade",w:8},{h:"Estoquista",w:20}],L.map(m=>[m.d,m.item,m.p,m.cat,m.q,m.un,m.est])))}
+};
+const AC=Object.assign({
+  entrar:()=>{P.senha=$("senha").value.trim();salvar();P.erro="";render();carregar()},
+  sair:()=>{P.senha="";P.d=null;salvar();render()},
+  recarregar:()=>carregar(),
+  tab:v=>{P.tab=v;P.f={};salvar();render()},
+  periodo:()=>{P.de=$("pde").value;P.ate=$("pate").value;if(P.de>P.ate)[P.de,P.ate]=[P.ate,P.de];carregar()},
+  ord:v=>{const[n,c]=v.split(":");const o=P.ord[n];P.ord[n]={c:+c,d:o&&o.c===+c?-o.d:1};render()}
+},XL);
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const f=AC[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v)}});
+document.addEventListener("input",e=>{const t=e.target;const m={fb:"b"}[t.id];if(m){P.f[m]=t.value;P.foco=t.id;render()}});
+document.addEventListener("change",e=>{const t=e.target;const m={fc:"c",fs:"s",ft:"t",fpes:"pes"}[t.id];if(m){P.f[m]=t.value;render()}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="senha")AC.entrar()});
+render();if(P.senha)carregar();
+setInterval(()=>{if(P.senha&&!document.hidden)carregar()},5*60000);
+</script>
+</body>
+</html>

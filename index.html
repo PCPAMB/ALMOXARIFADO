@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Almoxarifado – Estoquista</title>
+<script src="config.js"></script>
+<style>
+:root{--lime:#CDFF00;--limeD:#708C00;--limeL:#F3FFCC;--dark:#1C1E1A;--bg:#F5F6F2;--bd:#D6DAD0;--tx:#1C1E1A;--tx2:#686E64;--okL:#D6F0E0;--warn:#E6A800;--warnL:#FFF3CD;--err:#DC3545;--errL:#FFE4E6;--org:#E65C00}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;color:var(--tx);background:#E9EBE4;display:flex;justify-content:center}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{width:100%;max-width:560px;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;box-shadow:0 0 30px rgba(0,0,0,.12)}
+.hd{background:var(--dark);color:var(--lime);display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:5px solid var(--lime);min-height:66px;position:sticky;top:0;z-index:3}
+.hd .logo{height:22px;width:auto;flex:none}
+.hd .t{font-size:20px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd .u{font-size:13px;color:#C9CEC2;text-align:right;line-height:1.2}
+.back{background:none;border:0;color:var(--lime);font-size:26px;cursor:pointer;padding:0 6px 0 0;line-height:1}
+.body{flex:1;padding:14px 18px}
+.foot{padding:10px 18px 18px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--bd)}
+.lbl{font-size:13px;color:var(--tx2);margin:12px 0 4px}
+.in,.sel{width:100%;height:48px;border:1px solid var(--bd);border-radius:8px;background:#fff;padding:0 12px;font-size:17px}
+textarea.in{height:auto;min-height:64px;padding:10px 12px;resize:vertical}
+.in:focus,.sel:focus{outline:none;border:2px solid var(--limeD)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{width:100%;min-height:56px;border-radius:12px;border:0;background:var(--lime);color:var(--dark);font-size:19px;font-weight:600;cursor:pointer;padding:0 14px}
+.btn:hover{filter:brightness(.94)}
+.btn:disabled{background:var(--bd);color:var(--tx2);cursor:not-allowed;filter:none}
+.btn.sec{background:#fff;border:2px solid var(--dark)}
+.btn.sm{min-height:40px;font-size:15px;width:auto;padding:0 16px}
+.grid4{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{min-height:104px;border-radius:14px;border:2px solid var(--dark);background:#fff;cursor:pointer;font-size:20px;font-weight:600;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px}
+.tile small{font-size:13px;font-weight:400;color:var(--tx2)}
+.tile.pri{background:var(--lime)}
+.tile .ic{font-size:30px;line-height:1}
+.alerta{display:flex;align-items:center;gap:12px;background:var(--errL);border:2px solid var(--err);border-radius:12px;padding:12px 14px;margin-bottom:14px;cursor:pointer}
+.alerta .n{font-size:30px;font-weight:700;color:var(--err);min-width:40px;text-align:center}
+.alerta.am{background:var(--warnL);border-color:var(--warn)}.alerta.am .n{color:#9A6F00}
+.info{background:var(--limeL);border:1px solid var(--limeD);border-radius:8px;padding:10px 12px;font-size:15px;margin-top:10px}
+.warn{background:var(--warnL);border:1px solid var(--warn);border-radius:8px;padding:10px 12px;font-size:14.5px;margin-top:8px}
+.err{background:var(--errL);border:1px solid var(--err);border-radius:8px;padding:10px 12px;font-size:14.5px;margin-top:8px}
+.card{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:11px 13px;margin-bottom:8px;cursor:pointer}
+.card.escolhido{background:var(--limeL);border:3px solid var(--limeD);padding:9px 11px}
+.l1{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.nm{font-weight:600;font-size:16px;line-height:1.25}
+.muted{color:var(--tx2);font-size:13px}
+.chip{font-size:12px;padding:3px 10px;border-radius:12px;background:var(--bg);white-space:nowrap;border:1px solid var(--bd)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;margin:0 -2px}
+.chips .chip{font-size:14px;padding:7px 13px;cursor:pointer;background:#fff}
+.chips .chip.on{background:var(--dark);color:var(--lime);border-color:var(--dark)}
+.sd{font-size:13px;font-weight:600;padding:3px 9px;border-radius:10px;white-space:nowrap}
+.n-ok{background:var(--okL)}.n-atencao{background:var(--warnL);color:#7A5800}.n-critico{background:#FFE0CC;color:#9A3D00}.n-zerado,.n-negativo{background:var(--err);color:#fff}
+.cart{background:#fff;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+.ci{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--bd)}
+.ci:last-child{border-bottom:0}
+.ci .x{flex:1;min-width:0}
+.q{display:flex;align-items:center;gap:4px}
+.q button{width:38px;height:38px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);font-size:20px;cursor:pointer}
+.q input{width:64px;height:38px;text-align:center;border:1px solid var(--bd);border-radius:8px;font-size:17px}
+.rm{background:none;border:0;color:var(--err);font-size:22px;cursor:pointer;padding:0 4px}
+.empty{padding:22px;text-align:center;color:var(--tx2)}
+.big1{font-size:23px;font-weight:600}
+.ok{text-align:center;padding-top:14px}.ok .chk{font-size:64px;color:var(--limeD);line-height:1}
+.pin{font-size:24px;letter-spacing:8px;-webkit-text-security:disc;text-security:disc}.pin::placeholder{letter-spacing:normal;font-size:16px}
+.linkbtn{background:none;border:0;color:var(--tx2);text-decoration:underline;cursor:pointer;font-size:13px;padding:6px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--dark);color:var(--lime);padding:11px 18px;border-radius:9px;font-size:15px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9;max-width:90%;text-align:center}
+.toast.show{opacity:1}
+.tipo-bar{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.tipo-bar .chip{font-size:14px;padding:7px 12px;cursor:pointer;background:#fff}
+.tipo-bar .chip.on{background:var(--lime);border-color:var(--dark);font-weight:600}
+.ver{font-size:11px;color:var(--tx2);text-align:center;padding:8px}
+.estornado{opacity:.55;text-decoration:line-through}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+const VERSAO_APP="1.0";
+const KEY="almox_v1";
+const API_PADRAO=(window.ALMOX_API||"");
+const TIPO_INFO={"Saída":{ic:"⬆",txt:"Saída",pes:"Para quem (colaborador ou setor)",ob:true},"Entrada":{ic:"⬇",txt:"Entrada",pes:"Fornecedor (opcional)",ob:false},
+  "Devolução":{ic:"↩",txt:"Devolução",pes:"Quem devolveu",ob:true},"Ajuste (+)":{ic:"+",txt:"Ajuste (+)",pes:"",ob:false},"Ajuste (-)":{ic:"−",txt:"Ajuste (−)",pes:"",ob:false}};
+const NIV={negativo:"Negativo",zerado:"Zerado",critico:"Crítico",atencao:"Atenção",ok:""};
+let S=carregar();
+let UI={tela:"",pin:"",uSel:"",busca:"",cat:"",erro:"",enviando:false,ret:"",res:null,ult:null,estId:"",estMot:""};
+function novo(){return {cfg:{api:API_PADRAO,chave:"",dev:""},users:[],itens:[],pessoas:[],cadEm:"",user:null,lote:null}}
+function carregar(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.cfg){if(!v.cfg.api)v.cfg.api=API_PADRAO;return Object.assign(novo(),v)}}catch(e){}return novo()}
+function salvar(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nf=v=>(Number(v)||0).toLocaleString("pt-BR",{maximumFractionDigits:2});
+const pad=(n,l=2)=>String(n).padStart(l,"0");
+const hoje=()=>{const d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())};
+const semAc=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),3200)}
+const online=()=>!!(S.cfg.api&&S.cfg.chave);
+async function api(body,ms=25000){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),ms);
+  try{const r=await fetch(S.cfg.api,{method:"POST",body:JSON.stringify(Object.assign({k:S.cfg.chave},body)),signal:ctl.signal,redirect:"follow"});
+    const j=await r.json();if(!j.ok)throw new Error(j.erro||"Erro no servidor");return j}
+  catch(e){if(e.name==="AbortError")throw new Error("Sem resposta do servidor (internet?)");if(e instanceof TypeError)throw new Error("Sem conexão com a internet");throw e}finally{clearTimeout(t)}}
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}
+/* itens: [id, produto, categoria, endereço, unidade, saldo, mínimo, nível] */
+const I=r=>({id:r[0],p:r[1],cat:r[2],end:r[3],un:r[4],saldo:r[5],min:r[6],nv:r[7]});
+function item(id){const r=S.itens.find(x=>x[0]===id);return r?I(r):null}
+async function baixar(avisar){if(!online())return false;
+  try{const j=await api({a:"cad"});S.users=j.users;S.itens=j.itens;S.pessoas=j.pessoas;S.cadEm=new Date().toISOString();salvar();
+    if(avisar)toast(`Estoque atualizado: ${j.itens.length} itens.`);return true}
+  catch(e){if(avisar)toast(e.message);return false}}
+const criticos=()=>S.itens.map(I).filter(i=>["critico","zerado","negativo"].includes(i.nv));
+const atencao=()=>S.itens.map(I).filter(i=>i.nv==="atencao");
+const sdChip=i=>`<span class="sd n-${i.nv}">${nf(i.saldo)} ${esc(i.un)}${NIV[i.nv]?" · "+NIV[i.nv]:""}</span>`;
+
+/* ===================== TELAS ===================== */
+function hd(t,voltar){const u=S.user?`<div class="u">${esc(S.user.nome)}<br><button class="linkbtn" style="color:#C9CEC2;padding:0" data-act="sair">sair</button></div>`:"";
+  return `<div class="hd">${voltar?`<button class="back" data-act="ir" data-v="${voltar}">‹</button>`:`<img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()">`}<div class="t">${esc(t)}</div>${u}</div>`}
+function render(){
+  if(!online())UI.tela="config";else if(!S.user&&UI.tela!=="config")UI.tela="login";else if(!UI.tela)UI.tela="inicio";
+  const f={config:tConfig,login:tLogin,inicio:tInicio,lote:tLote,itens:tItens,ok:tOk,criticos:tCriticos,ultimos:tUltimos,saldo:tItens}[UI.tela]||tInicio;
+  $("app").innerHTML=f();
+  if(UI.tela==="itens"||UI.tela==="saldo")lista();
+  if(UI.foco){const el=$(UI.foco);UI.foco="";if(el){el.focus();if(el.select)try{el.select()}catch(_){}}}
+}
+function tConfig(){return hd("Configurar aparelho")+`<div class="body">
+  <div class="info">Abra neste aparelho o <b>link de instalação</b> que o responsável mandou (WhatsApp ou e-mail da empresa). O aparelho fica configurado sozinho.</div>
+  <div class="lbl">Ou digite a chave do aparelho</div><input class="in" id="cChave" value="${esc(S.cfg.chave)}" autocomplete="off">
+  <div class="lbl">Endereço do servidor (/exec)</div><input class="in" id="cApi" value="${esc(S.cfg.api)}" autocomplete="off">
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}</div>
+  <div class="foot"><button class="btn" data-act="salvarCfg">Salvar e conectar</button>${S.user||S.users.length?`<button class="linkbtn" data-act="ir" data-v="login">voltar</button>`:""}</div><div class="ver">versão ${VERSAO_APP}</div>`}
+function tLogin(){const b=semAc(UI.busca);const us=S.users.filter(u=>!b||semAc(u.nome).includes(b));
+  return hd("Almoxarifado – entrar")+`<div class="body">
+  ${S.users.length>6?`<input class="in" id="busca" placeholder="Procurar nome" value="${esc(UI.busca)}" autocomplete="off">`:""}
+  <div class="lbl">Quem está lançando?</div>
+  ${us.map(u=>`<div class="card ${UI.uSel===u.id?"escolhido":""}" data-act="uSel" data-v="${esc(u.id)}"><div class="nm">${esc(u.nome)}</div></div>`).join("")||`<div class="empty">${S.users.length?"Nenhum nome encontrado.":"Sem estoquistas. Toque em Atualizar."}</div>`}
+  ${UI.uSel?`<div class="lbl">PIN</div><input class="in pin" id="pin" type="text" inputmode="numeric" autocomplete="off" placeholder="digite seu PIN" value="">`:""}
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}</div>
+  <div class="foot"><button class="btn" data-act="entrar" ${UI.uSel?"":"disabled"}>Entrar</button>
+  <div style="display:flex;justify-content:space-between"><button class="linkbtn" data-act="atualizar">atualizar lista</button><button class="linkbtn" data-act="ir" data-v="config">configurar aparelho</button></div></div><div class="ver">versão ${VERSAO_APP}</div>`}
+function tInicio(){const c=criticos(),a=atencao();
+  return hd("Almoxarifado")+`<div class="body">
+  ${c.length?`<div class="alerta" data-act="ir" data-v="criticos"><div class="n">${c.length}</div><div><b>Item(ns) crítico(s)</b><br><span class="muted">no estoque mínimo ou abaixo · toque para ver</span></div></div>`
+    :a.length?`<div class="alerta am" data-act="ir" data-v="criticos"><div class="n">${a.length}</div><div><b>Item(ns) em atenção</b><br><span class="muted">perto do estoque mínimo</span></div></div>`:""}
+  <div class="grid4">
+   <button class="tile pri" data-act="novo" data-v="Saída"><span class="ic">⬆</span>Saída<small>entregar material</small></button>
+   <button class="tile" data-act="novo" data-v="Entrada"><span class="ic">⬇</span>Entrada<small>chegou material</small></button>
+   <button class="tile" data-act="novo" data-v="Devolução"><span class="ic">↩</span>Devolução<small>voltou ao estoque</small></button>
+   <button class="tile" data-act="ir" data-v="saldo"><span class="ic">🔎</span>Consultar<small>saldo e endereço</small></button>
+  </div>
+  ${S.lote&&S.lote.itens.length?`<div class="warn" data-act="ir" data-v="lote" style="cursor:pointer">Há um lançamento de <b>${esc(S.lote.tipo)}</b> não enviado (${S.lote.itens.length} item(ns)). Toque para continuar.</div>`:""}
+  <div style="display:flex;gap:10px;margin-top:16px"><button class="btn sec sm" data-act="ultimos" style="flex:1">Últimos lançamentos</button><button class="btn sec sm" data-act="novo" data-v="Ajuste (+)" style="flex:1">Ajuste de inventário</button></div>
+  <div class="muted" style="margin-top:14px;text-align:center">Estoque atualizado ${S.cadEm?new Date(S.cadEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"} · <button class="linkbtn" data-act="atualizar">atualizar</button></div>
+  </div><div class="ver">versão ${VERSAO_APP}</div>`}
+function tLote(){const L=S.lote;const T=TIPO_INFO[L.tipo];const aj=L.tipo.startsWith("Ajuste");
+  const its=L.itens.map((x,i)=>{const it=item(x.id)||{p:x.id,un:"",saldo:0,nv:"ok"};const sinal=["Saída","Ajuste (-)"].includes(L.tipo)?-1:1;const dep=it.saldo+sinal*(Number(x.q)||0);
+    return `<div class="ci"><div class="x"><div class="nm">${esc(it.p)}</div><div class="muted">${esc(x.id)}${it.end?" · "+esc(it.end):""} · saldo ${nf(it.saldo)} → <b id="dp${i}" data-s="${it.saldo}" data-g="${sinal}" style="color:${dep<0?"var(--err)":"inherit"}">${nf(dep)}</b> ${esc(it.un)}</div></div>
+    <div class="q"><button data-act="qm" data-v="${i}">−</button><input id="q${i}" data-i="${i}" class="qin" type="number" inputmode="decimal" min="0" step="any" value="${esc(x.q)}"><button data-act="qp" data-v="${i}">+</button></div><button class="rm" data-act="rm" data-v="${i}" title="tirar">×</button></div>`}).join("");
+  return hd(T.txt,"inicio")+`<div class="body">
+  ${aj?`<div class="tipo-bar">${["Ajuste (+)","Ajuste (-)"].map(t=>`<span class="chip ${L.tipo===t?"on":""}" data-act="tipo" data-v="${t}">${TIPO_INFO[t].txt} ${t.includes("+")?"sobrou":"faltou"}</span>`).join("")}</div>`:""}
+  ${T.pes?`<div class="lbl">${T.pes}</div><input class="in" id="pes" list="dlp" value="${esc(L.pessoa)}" autocomplete="off" placeholder="digite o nome"><datalist id="dlp">${S.pessoas.filter(p=>L.tipo==="Entrada"?p[1]!=="Colaborador":p[1]!=="Fornecedor").map(p=>`<option value="${esc(p[0])}">`).join("")}</datalist>`:""}
+  <div class="row2"><div><div class="lbl">Data</div><input class="in" id="dt" type="date" max="${hoje()}" value="${esc(L.data)}"></div>
+  ${L.tipo==="Entrada"?`<div><div class="lbl">Nota fiscal</div><input class="in" id="nf" value="${esc(L.nf)}" autocomplete="off"></div>`:"<div></div>"}</div>
+  <div class="lbl">Itens</div>
+  ${L.itens.length?`<div class="cart">${its}</div>`:`<div class="empty" style="background:#fff;border:1px dashed var(--bd);border-radius:10px">Nenhum item ainda.</div>`}
+  <button class="btn sec" style="margin-top:10px" data-act="ir" data-v="itens">+ Adicionar item</button>
+  <div class="lbl">${aj?"Motivo do ajuste (obrigatório)":"Observação (opcional)"}</div><textarea class="in" id="obs">${esc(L.obs)}</textarea>
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}</div>
+  <div class="foot"><button class="btn" data-act="enviar" ${L.itens.length&&!UI.enviando?"":"disabled"}>${UI.enviando?"Enviando…":"Confirmar "+T.txt.toLowerCase()+" ("+L.itens.length+")"}</button>
+  <button class="linkbtn" data-act="descartar">descartar este lançamento</button></div>`}
+function tItens(){const cons=UI.tela==="saldo";const cats=[...new Set(S.itens.map(r=>r[2]))].sort();
+  return hd(cons?"Consultar saldo":"Escolher item",cons?"inicio":"lote")+`<div class="body">
+  <input class="in" id="bi" placeholder="Procurar por nome ou código" value="${esc(UI.busca)}" autocomplete="off">
+  <div class="chips" style="margin-top:8px"><span class="chip ${UI.cat?"":"on"}" data-act="cat" data-v="">Todos</span>${cats.map(c=>`<span class="chip ${UI.cat===c?"on":""}" data-act="cat" data-v="${esc(c)}">${esc(c.replace("INSUMOS/PRODUCAO","INSUMOS"))}</span>`).join("")}</div>
+  <div id="lista"></div></div>`}
+function lista(){const el=$("lista");if(!el)return;const b=semAc(UI.busca).trim();const ws=b.split(/\s+/).filter(Boolean);
+  let L=S.itens.map(I).filter(i=>(!UI.cat||i.cat===UI.cat)&&ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w)));
+  const tot=L.length;L=L.sort((a,b)=>a.p.localeCompare(b.p,"pt-BR")).slice(0,80);const ja=S.lote?S.lote.itens.map(x=>x.id):[];
+  el.innerHTML=(L.map(i=>`<div class="card ${ja.includes(i.id)?"escolhido":""}" data-act="${UI.tela==="saldo"?"":"pick"}" data-v="${esc(i.id)}"><div class="l1"><div><div class="nm">${esc(i.p)}</div><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · <b>"+esc(i.end)+"</b>":""}${i.min?" · mín. "+nf(i.min):""}</div></div>${sdChip(i)}</div></div>`).join("")||`<div class="empty">Nenhum item encontrado${UI.cat?` em ${esc(UI.cat)}. <button class="linkbtn" data-act="cat" data-v="">procurar em todas</button>`:"."}</div>`)+(tot>80?`<div class="muted" style="text-align:center">Mostrando 80 de ${tot}. Digite mais para filtrar.</div>`:"")}
+function tOk(){const r=UI.res;const al=r.alertas||[];
+  return hd("Lançado")+`<div class="body"><div class="ok"><div class="chk">✓</div><div class="big1">${esc(r.tipo)} gravada</div><div class="muted">${r.ids.length} item(ns)${r.pessoa?" · "+esc(r.pessoa):""}${r.repetido?" · já estava gravado":""}</div></div>
+  <div class="cart" style="margin-top:14px">${r.itens.map(x=>{const it=item(x.id)||{p:x.id,un:""};return `<div class="ci"><div class="x"><div class="nm">${esc(it.p)}</div><div class="muted">${nf(x.q)} ${esc(it.un)}</div></div>${it.nv?sdChip(it):""}</div>`}).join("")}</div>
+  ${al.length?`<div class="err" style="margin-top:14px"><b>⚠ Estoque crítico</b><br>${al.map(a=>`${esc(a.p)}: saldo <b>${nf(a.saldo)} ${esc(a.un)}</b> (mínimo ${nf(a.min)})${a.cob!=null?" · dura ~"+a.cob+" dia(s)":""}`).join("<br>")}<br><span class="muted">O alerta foi enviado por e-mail para os responsáveis.</span></div>`:""}
+  </div><div class="foot"><button class="btn" data-act="novo" data-v="${esc(r.tipo==="Ajuste (-)"?"Ajuste (+)":r.tipo)}">Nova ${esc(r.tipo.startsWith("Ajuste")?"ajuste":r.tipo.toLowerCase())}</button><button class="btn sec" style="margin-top:8px" data-act="ir" data-v="inicio">Início</button></div>`}
+function tCriticos(){const c=criticos().sort((a,b)=>a.saldo/(a.min||1)-b.saldo/(b.min||1)),a=atencao();
+  const row=i=>`<div class="card"><div class="l1"><div><div class="nm">${esc(i.p)}</div><div class="muted">${esc(i.id)}${i.end?" · "+esc(i.end):""} · mínimo ${nf(i.min)}</div></div>${sdChip(i)}</div></div>`;
+  return hd("Itens críticos","inicio")+`<div class="body">
+  <div class="lbl">No mínimo ou abaixo (${c.length})</div>${c.map(row).join("")||`<div class="empty">Nenhum item crítico. 👍</div>`}
+  ${a.length?`<div class="lbl">Atenção: perto do mínimo (${a.length})</div>${a.map(row).join("")}`:""}
+  <div class="muted" style="margin-top:12px">O estoque mínimo de cada item é definido na planilha (aba CAD_Itens, coluna EstoqueMinimo).</div></div>`}
+function tUltimos(){const L=UI.ult;
+  return hd("Últimos lançamentos","inicio")+`<div class="body">${!L?`<div class="empty">Carregando…</div>`:!L.length?`<div class="empty">Nenhum lançamento pelo app ainda.</div>`:L.map(m=>`
+  <div class="card ${m.st==="Estornado"?"estornado":""}" style="cursor:default"><div class="l1"><div><div class="nm">${esc(m.t)} · ${nf(m.q)} ${esc(m.un)} ${esc(m.p)}</div>
+  <div class="muted">${m.d.split("-").reverse().join("/")}${m.pes?" · "+esc(m.pes):""} · por ${esc(m.est)} · ${esc(m.id)}</div></div>
+  ${m.st==="Estornado"?`<span class="chip">estornado</span>`:`<button class="btn sec sm" data-act="est" data-v="${esc(m.id)}">Estornar</button>`}</div>
+  ${UI.estId===m.id?`<div class="lbl">Motivo do estorno</div><input class="in" id="estMot" autocomplete="off" placeholder="ex.: lançado em dobro"><div class="row2" style="margin-top:8px"><button class="btn sm" data-act="estOk" style="width:100%">Confirmar estorno</button><button class="btn sec sm" data-act="est" data-v="" style="width:100%">Cancelar</button></div>`:""}</div>`).join("")}
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}<div class="muted" style="margin-top:10px">Estornar cancela o lançamento e devolve o saldo. Fica registrado quem estornou e o motivo.</div></div>`}
+
+/* ===================== AÇÕES ===================== */
+function ler(){const L=S.lote;if(!L||UI.tela!=="lote")return;const g=id=>{const e=$(id);return e?e.value:null};
+  if(g("pes")!==null)L.pessoa=g("pes");if(g("dt")!==null)L.data=g("dt");if(g("nf")!==null)L.nf=g("nf");if(g("obs")!==null)L.obs=g("obs");
+  document.querySelectorAll(".qin").forEach(e=>{L.itens[+e.dataset.i].q=e.value});salvar()}
+function ir(t){ler();UI.erro="";if(t==="itens"||t==="saldo"){UI.busca="";UI.foco="bi";if(t==="saldo")UI.cat=""}UI.tela=t;render();window.scrollTo(0,0)}
+const AC={
+  ir:v=>ir(v),
+  sair:()=>{S.user=null;UI.uSel="";salvar();ir("login")},
+  atualizar:async()=>{toast("Atualizando…");await baixar(true);render()},
+  uSel:v=>{UI.uSel=v;UI.erro="";UI.foco="pin";render()},
+  entrar:async()=>{const u=S.users.find(x=>x.id===UI.uSel);const pin=($("pin")||{}).value||"";if(!u)return;
+    if(await sha(u.id+":"+pin.trim())!==u.ph){UI.erro="PIN incorreto.";render();return}
+    S.user={id:u.id,nome:u.nome};UI.erro="";salvar();ir("inicio");baixar(false).then(()=>{if(UI.tela==="inicio")render()})},
+  salvarCfg:async()=>{S.cfg.chave=$("cChave").value.trim();S.cfg.api=$("cApi").value.trim();if(!S.cfg.dev)S.cfg.dev="A"+Math.random().toString(36).slice(2,6).toUpperCase();salvar();
+    UI.erro="";if(await baixar(true)){UI.tela="login";render()}else{UI.erro="Não conectou. Confira a chave, o endereço e a internet.";UI.tela="config";render()}},
+  novo:v=>{if(S.lote&&S.lote.itens.length&&S.lote.tipo!==v&&!confirm("Há um lançamento de "+S.lote.tipo+" não enviado. Descartar e começar outro?"))return ir("lote");
+    if(!S.lote||!S.lote.itens.length||S.lote.tipo!==v)UI.cat="",S.lote={id:"",tipo:v,pessoa:"",data:hoje(),nf:"",obs:"",itens:[]};salvar();ir("lote")},
+  tipo:v=>{ler();S.lote.tipo=v;salvar();render()},
+  pick:v=>{const L=S.lote;const i=L.itens.findIndex(x=>x.id===v);if(i<0)L.itens.push({id:v,q:1});L.id="";salvar();UI.tela="lote";render();
+    const k=L.itens.findIndex(x=>x.id===v);const e=$("q"+k);if(e){e.focus();e.select();e.scrollIntoView({block:"center"})}},
+  qm:v=>{ler();const x=S.lote.itens[+v];x.q=Math.max(0,(Number(x.q)||0)-1);S.lote.id="";salvar();render()},
+  qp:v=>{ler();const x=S.lote.itens[+v];x.q=(Number(x.q)||0)+1;S.lote.id="";salvar();render()},
+  rm:v=>{ler();S.lote.itens.splice(+v,1);S.lote.id="";salvar();render()},
+  cat:v=>{UI.cat=v;render()},
+  descartar:()=>{if(!confirm("Descartar este lançamento?"))return;S.lote=null;salvar();ir("inicio")},
+  enviar:async()=>{ler();const L=S.lote;const T=TIPO_INFO[L.tipo];UI.erro="";
+    const its=L.itens.map(x=>({id:x.id,qtd:Number(String(x.q).replace(",","."))}));
+    if(its.some(x=>!(x.qtd>0)))UI.erro="Toda quantidade precisa ser maior que zero (ou tire o item).";
+    else if(T.ob&&!L.pessoa.trim())UI.erro="Informe "+T.pes.toLowerCase().replace(/ \(.*/,"")+".";
+    else if(L.tipo.startsWith("Ajuste")&&!L.obs.trim())UI.erro="Escreva o motivo do ajuste.";
+    else if(L.data>hoje())UI.erro="A data não pode ser futura.";
+    if(UI.erro)return render();
+    if(!L.id)L.id=(S.cfg.dev||"A")+"-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);salvar();
+    UI.enviando=true;render();
+    try{const r=await api({a:"lancar",lote:{id:L.id,tipo:L.tipo,pessoa:L.pessoa.trim(),data:L.data,nf:L.nf.trim(),obs:L.obs.trim(),itens:its,uid:S.user.id,unome:S.user.nome,ap:S.cfg.dev}});
+      Object.entries(r.saldos||{}).forEach(([k,v])=>{const row=S.itens.find(x=>x[0]===k);if(row){row[5]=v[0];row[7]=v[1]}});
+      if(L.pessoa.trim()&&!S.pessoas.some(p=>semAc(p[0])===semAc(L.pessoa.trim())))S.pessoas.push([L.pessoa.trim(),L.tipo==="Entrada"?"Fornecedor":"Colaborador"]);
+      UI.res={tipo:L.tipo,pessoa:L.pessoa.trim(),ids:r.ids,repetido:r.repetido,alertas:r.alertas||[],itens:its.map(x=>({id:x.id,q:x.qtd}))};
+      S.lote=null;salvar();UI.enviando=false;UI.tela="ok";render();if(r.repetido)baixar(false)}
+    catch(e){UI.enviando=false;UI.erro=e.message+(/conex|internet/i.test(e.message)?" O lançamento NÃO foi gravado. Ele está guardado aqui: tente de novo quando a internet voltar.":"");render();if(/Saldo insuficiente/.test(e.message))baixar(false).then(render)}},
+  ultimos:async()=>{UI.ult=null;ir("ultimos");try{UI.ult=(await api({a:"ultimos"})).movs}catch(e){UI.ult=[];UI.erro=e.message}render()},
+  est:v=>{UI.estId=v;UI.erro="";render();if(v)UI.foco="estMot",render()},
+  estOk:async()=>{const m=($("estMot")||{}).value||"";if(!m.trim()){UI.erro="Escreva o motivo do estorno.";return render()}
+    try{await api({a:"estornar",id:UI.estId,motivo:m.trim(),uid:S.user.id,unome:S.user.nome,ap:S.cfg.dev});toast("Estornado.");UI.estId="";UI.ult=(await api({a:"ultimos"})).movs;baixar(false)}
+    catch(e){UI.erro=e.message}render()}
+};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||!b.dataset.act)return;const f=AC[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v)}});
+document.addEventListener("input",e=>{const t=e.target;
+  if(t.id==="bi"){UI.busca=t.value;lista()}
+  if(t.id==="busca"){UI.busca=t.value;const p=t.selectionStart;render();const n=$("busca");if(n){n.focus();n.setSelectionRange(p,p)}}
+  if(t.classList&&t.classList.contains("qin")){ler();S.lote.id="";const d=$("dp"+t.dataset.i);if(d){const v=Number(d.dataset.s)+Number(d.dataset.g)*(Number(String(t.value).replace(",","."))||0);d.textContent=nf(v);d.style.color=v<0?"var(--err)":"inherit"}}});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="pin")AC.entrar();if(e.key==="Enter"&&e.target.id==="estMot")AC.estOk()});
+/* link de instalação: .../ALMOXARIFADO/#chave=XXXX (a parte depois do # não vai para o GitHub) */
+(function(){try{const h=new URLSearchParams(location.hash.slice(1));const k=(h.get("chave")||"").trim();if(!k)return;
+  S.cfg.chave=k;if(h.get("api"))S.cfg.api=h.get("api");if(!S.cfg.api)S.cfg.api=API_PADRAO;if(!S.cfg.dev)S.cfg.dev="A"+Math.random().toString(36).slice(2,6).toUpperCase();
+  salvar();history.replaceState(null,"",location.pathname+location.search);window._instalado=true}catch(e){}})();
+render();
+if(online())baixar(false).then(ok=>{if(window._instalado)toast(ok?"Aparelho configurado. "+S.users.length+" estoquista(s).":"Não conectou. Verifique a internet.");if(["login","inicio","criticos"].includes(UI.tela))render()});
+setInterval(()=>{if(online()&&!document.hidden&&["inicio","login","criticos"].includes(UI.tela))baixar(false).then(()=>{if(["inicio","criticos"].includes(UI.tela))render()})},10*60000);
+</script>
+</body>
+</html>
