@@ -55,6 +55,14 @@ tr:hover td{background:#FAFBF7}
 .gate .btn{width:100%;height:48px;font-size:16px}
 .tipo-s{color:#9A3D00;font-weight:600}.tipo-e{color:var(--limeD);font-weight:600}
 .est td{opacity:.5;text-decoration:line-through}
+.okm{background:var(--okL);border:1px solid #2E8B57;border-radius:10px;padding:10px 14px;margin-bottom:14px}
+.fg{display:grid;grid-template-columns:2.2fr 1.3fr 1fr .8fr .8fr .8fr;gap:10px;align-items:end}
+.fg label{font-size:12.5px;color:var(--tx2);display:block;margin-bottom:3px}.fg .in,.fg .sel{width:100%}
+@media(max-width:900px){.fg{grid-template-columns:1fr 1fr}}
+tr.edit td{background:var(--limeL)!important;vertical-align:middle}tr.edit .in,tr.edit .sel{height:34px;width:100%;min-width:70px}
+.lk{background:none;border:0;color:var(--limeD);text-decoration:underline;cursor:pointer;font-size:13px;padding:2px 4px;font-weight:600}
+.inat td{color:#9AA096}
+.hd .who{font-size:13px;color:var(--lime)}
 </style>
 </head>
 <body>
@@ -62,9 +70,9 @@ tr:hover td{background:#FAFBF7}
 <script>
 const KEY="almox_painel_v1";
 const API=(window.ALMOX_API||"");
-let P={senha:"",d:null,tab:"criticos",de:"",ate:"",f:{},ord:{}};
-try{const v=JSON.parse(localStorage.getItem(KEY)||"{}");P.senha=v.senha||"";P.tab=v.tab||"criticos"}catch(e){}
-const salvar=()=>{try{localStorage.setItem(KEY,JSON.stringify({senha:P.senha,tab:P.tab}))}catch(e){}};
+let P={senha:"",quem:"",d:null,tab:"criticos",de:"",ate:"",f:{},ord:{},nv:{},ev:{},ed:"",msg:"",salvando:false};
+try{const v=JSON.parse(localStorage.getItem(KEY)||"{}");P.senha=v.senha||"";P.quem=v.quem||"";P.tab=v.tab||"criticos"}catch(e){}
+const salvar=()=>{try{localStorage.setItem(KEY,JSON.stringify({senha:P.senha,quem:P.quem,tab:P.tab}))}catch(e){}};
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const nf=v=>(Number(v)||0).toLocaleString("pt-BR",{maximumFractionDigits:2});
@@ -83,16 +91,16 @@ async function carregar(){try{const j=await api({a:"painel",de:P.de,ate:P.ate});
 const sd=i=>`<span class="sd n-${i.nv}">${NIV[i.nv]}</span>`;
 function render(){
   if(!P.senha)return $("app").innerHTML=`<div class="gate"><img src="logo.png" alt="" style="height:26px;filter:invert(1)" onerror="this.remove()"><h2>Painel do estoque</h2>
-    <input class="in" id="senha" type="password" placeholder="Senha do painel" autocomplete="current-password">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}<button class="btn" data-act="entrar">Entrar</button></div>`;
+    <input class="in" id="quem" placeholder="Seu nome" value="${esc(P.quem)}" autocomplete="name"><input class="in" id="senha" type="password" placeholder="Senha do painel ou de gestão" autocomplete="current-password">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}<button class="btn" data-act="entrar">Entrar</button></div>`;
   if(!P.d)return $("app").innerHTML=hd()+`<div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:`<p class="muted">Carregando…</p>`}</div>`;
   const it=P.d.itens.map(I).filter(i=>i.ativo);const crit=it.filter(i=>["critico","zerado","negativo"].includes(i.nv));
-  const tabs=[["criticos","Críticos",crit.length],["estoque","Estoque"],["movimentos","Movimentos"],["consumo","Consumo"]];
+  const tabs=[["criticos","Críticos",crit.length],["estoque","Estoque"],["movimentos","Movimentos"],["consumo","Consumo"]];if(P.d.gestao)tabs.push(["cadastro","Cadastro"]);if(P.tab==="cadastro"&&!P.d.gestao)P.tab="criticos";
   $("app").innerHTML=hd()+`<div class="tabs">${tabs.map(t=>`<div class="tab ${P.tab===t[0]?"on":""}" data-act="tab" data-v="${t[0]}">${t[1]}${t[2]?`<span class="b">${t[2]}</span>`:""}</div>`).join("")}</div>
-   <div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}${{criticos:vCrit,estoque:vEst,movimentos:vMov,consumo:vCons}[P.tab](it)}</div>`;
+   <div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}${P.msg?`<div class="${P.msg[0]==="!"?"err":"okm"}">${esc(P.msg.replace(/^!/,""))}</div>`:""}${{criticos:vCrit,estoque:vEst,movimentos:vMov,consumo:vCons,cadastro:vCad}[P.tab](it)}</div>`;
   if(P.foco){const e=$(P.foco);if(e){e.focus();const v=e.value;e.value="";e.value=v}P.foco=""}
 }
 const hd=()=>`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Painel do estoque</h1>
-  <span class="at">${P.d?"atualizado "+dBR(P.d.agora)+" "+P.d.agora.slice(11,16):""}</span><button data-act="recarregar">Atualizar</button><button data-act="sair">Sair</button></div>`;
+  ${P.d&&P.d.gestao?`<span class="who">gestão · ${esc(P.quem||"sem nome")}</span>`:""}<span class="at">${P.d?"atualizado "+dBR(P.d.agora)+" "+P.d.agora.slice(11,16):""}</span><button data-act="recarregar">Atualizar</button><button data-act="sair">Sair</button></div>`;
 function kpis(it){const c=it.filter(i=>["critico","zerado"].includes(i.nv)).length,a=it.filter(i=>i.nv==="atencao").length,n=it.filter(i=>i.nv==="negativo").length,m=it.filter(i=>i.min>0).length;
   return `<div class="kpis"><div class="kpi r"><div class="v">${c}</div><div class="l">no mínimo ou abaixo</div></div><div class="kpi a"><div class="v">${a}</div><div class="l">em atenção (até ${P.d.pct}% do mínimo)</div></div>
   <div class="kpi ${n?"r":""}"><div class="v">${n}</div><div class="l">com saldo negativo (ajustar)</div></div><div class="kpi g"><div class="v">${m}<span style="font-size:16px;color:var(--tx2)"> / ${it.length}</span></div><div class="l">itens com estoque mínimo definido</div></div></div>`}
@@ -142,6 +150,72 @@ function vCons(){const L=P.d.movs.map(M).filter(m=>m.t==="Saída"&&m.st!=="Estor
   <div class="box"><h2>Ficha por pessoa (EPI, fardamento e demais itens)<span class="sp"></span>${ficha.length?`<button class="btn" data-act="xlsFicha">Baixar ficha (Excel)</button>`:""}</h2>
   <div class="bar"><input class="in" id="fpes" list="dlp" placeholder="Digite o nome" value="${esc(pes)}" style="min-width:300px"><datalist id="dlp">${nomes.map(n=>`<option value="${esc(n)}">`).join("")}</datalist><span class="muted">no período escolhido</span></div>
   ${pes?tabela("ficha",[{h:"Data",v:m=>m.d,f:m=>dBR(m.d)},{h:"Item",v:m=>m.p},{h:"Categoria",v:m=>m.cat},{h:"Qtd",n:1,v:m=>m.q,f:m=>nf(m.q)+" "+esc(m.un)},{h:"Estoquista",v:m=>m.est}],ficha.slice().reverse()):""}</div>`}
+
+/* ===================== CADASTRO (só com a senha de gestão) ===================== */
+const UNID=["UNID","PAR","PCTS","CX","RL","KIT","FR","KG","L","M"];
+function catsAll(){return [...new Set(P.d.itens.map(r=>r[2]))].sort()}
+function prevId(cat){if(!cat)return "—";const pre=(P.d.cad.prefixos||{})[cat]||(semAc(cat).replace(/[^a-z]/g,"").toUpperCase().slice(0,4)||"ITEM");
+  let mx=0;P.d.itens.forEach(r=>{const m=new RegExp("^"+pre+"-(\\d+)$").exec(r[0]);if(m)mx=Math.max(mx,+m[1])});const n=mx+1;return pre+"-"+(n<10?"0"+n:n)}
+function vCad(){const cats=catsAll();const nv=P.nv;const catN=nv.Categoria==="__nova"?(nv.CatNova||"").trim().toUpperCase():nv.Categoria||"";
+  const f=P.f;const ws=semAc(f.b).split(/\s+/).filter(Boolean);
+  const L=P.d.itens.map(I).filter(i=>(!f.c||i.cat===f.c)&&(f.a==="todos"||(f.a==="inativos"?!i.ativo:i.ativo))&&ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR"));
+  const hb=semAc(f.h||"").trim();const H=P.d.cad.hist.filter(h=>!hb||semAc(h.join(" ")).includes(hb));
+  const ev=P.ev;const obs=P.d.cad.obs||{};
+  const linha=i=>P.ed===i.id?`<tr class="edit"><td><b>${esc(i.id)}</b></td>
+     <td><input class="in" id="e_Produto" value="${esc(ev.Produto)}"></td>
+     <td><select class="sel" id="e_Categoria">${cats.map(c=>`<option ${ev.Categoria===c?"selected":""}>${esc(c)}</option>`).join("")}</select></td>
+     <td><input class="in" id="e_Endereco" value="${esc(ev.Endereco)}" style="width:80px"></td>
+     <td><input class="in" id="e_Unidade" list="dlu" value="${esc(ev.Unidade)}" style="width:80px"></td>
+     <td><input class="in" id="e_EstoqueMinimo" type="number" min="0" step="any" value="${esc(ev.EstoqueMinimo)}" style="width:80px"></td>
+     <td class="n">${nf(i.saldo)}</td>
+     <td><select class="sel" id="e_Ativo"><option ${ev.Ativo==="Sim"?"selected":""}>Sim</option><option ${ev.Ativo==="Não"?"selected":""}>Não</option></select></td>
+     <td style="min-width:230px"><input class="in" id="e_motivo" placeholder="motivo da alteração" value="${esc(ev.motivo||"")}" style="margin-bottom:6px">
+     <button class="btn" data-act="edSalvar" ${P.salvando?"disabled":""}>Salvar</button> <button class="btn sec" data-act="edCancelar">Cancelar</button></td></tr>`
+    :`<tr class="${i.ativo?"":"inat"}"><td>${esc(i.id)}</td><td><b>${esc(i.p)}</b>${obs[i.id]?`<div class="muted">${esc(obs[i.id])}</div>`:""}</td><td>${esc(i.cat)}</td><td>${esc(i.end)}</td><td>${esc(i.un)}</td><td class="n">${i.min?nf(i.min):"—"}</td><td class="n">${nf(i.saldo)}</td><td>${i.ativo?"Sim":"<b>Não</b>"}</td>
+     <td><button class="lk" data-act="edAbrir" data-v="${esc(i.id)}">Editar</button><button class="lk" data-act="histItem" data-v="${esc(i.id)}">Histórico</button></td></tr>`;
+  return `<datalist id="dlu">${UNID.map(u=>`<option value="${u}">`).join("")}</datalist>
+  <div class="box"><h2>Novo produto<span class="sp"></span><span class="muted">código automático: <b>${esc(prevId(catN))}</b></span></h2>
+  <div class="fg"><div><label>Nome do produto *</label><input class="in" id="n_Produto" value="${esc(nv.Produto||"")}" placeholder="ex.: Luva nitrílica tamanho G"></div>
+   <div><label>Categoria *</label><select class="sel" id="n_Categoria"><option value="">escolha…</option>${cats.map(c=>`<option ${nv.Categoria===c?"selected":""}>${esc(c)}</option>`).join("")}<option value="__nova" ${nv.Categoria==="__nova"?"selected":""}>+ nova categoria…</option></select>
+   ${nv.Categoria==="__nova"?`<input class="in" id="n_CatNova" value="${esc(nv.CatNova||"")}" placeholder="nome da categoria" style="margin-top:6px">`:""}</div>
+   <div><label>Endereço</label><input class="in" id="n_Endereco" value="${esc(nv.Endereco||"")}" placeholder="ex.: E-07"></div>
+   <div><label>Unidade</label><input class="in" id="n_Unidade" list="dlu" value="${esc(nv.Unidade||"UNID")}"></div>
+   <div><label>Estoque mínimo</label><input class="in" id="n_EstoqueMinimo" type="number" min="0" step="any" value="${esc(nv.EstoqueMinimo||"")}"></div>
+   <div><label>Saldo inicial</label><input class="in" id="n_saldo" type="number" min="0" step="any" value="${esc(nv.saldo||"")}" placeholder="0"></div></div>
+  <div class="bar" style="margin:10px 0 0"><input class="in" id="n_Observacao" value="${esc(nv.Observacao||"")}" placeholder="observação (opcional, ex.: CA 12345, caixa com 12)" style="flex:1;min-width:260px">
+   <button class="btn" data-act="novoSalvar" ${P.salvando?"disabled":""}>${P.salvando?"Salvando…":"Cadastrar produto"}</button></div>
+  <div class="muted" style="margin-top:6px">O saldo inicial entra como “Ajuste (+)” com seu nome. Se o material ainda vai chegar, deixe 0 e lance a Entrada pelo app quando chegar.</div></div>
+  <div class="box"><h2>Produtos cadastrados<span class="sp"></span><span class="muted">${L.length} itens</span><button class="btn sec" data-act="xlsCad">Baixar cadastro (Excel)</button></h2>
+  <div class="bar"><input class="in" id="fb" placeholder="Procurar produto, código ou endereço" value="${esc(f.b||"")}" style="min-width:280px">
+   <select class="sel" id="fc"><option value="">Todas as categorias</option>${cats.map(c=>`<option ${f.c===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+   <select class="sel" id="fa"><option value="">Ativos</option><option value="inativos" ${f.a==="inativos"?"selected":""}>Inativos</option><option value="todos" ${f.a==="todos"?"selected":""}>Todos</option></select></div>
+  <div class="tw"><table><tr><th>Código</th><th>Produto</th><th>Categoria</th><th>Endereço</th><th>Unid.</th><th class="n">Mínimo</th><th class="n">Saldo</th><th>Ativo</th><th></th></tr>
+  ${L.slice(0,300).map(linha).join("")||`<tr><td colspan="9" class="muted" style="padding:18px;text-align:center">Nada encontrado.</td></tr>`}</table></div>
+  ${L.length>300?`<div class="muted" style="margin-top:6px">Mostrando 300 de ${L.length}. Use a busca.</div>`:""}
+  <div class="muted" style="margin-top:6px">O código não muda. Ao trocar o nome, o histórico de entradas e saídas continua ligado ao mesmo produto. Para tirar um item de uso, mude Ativo para “Não” (ele some do app, mas o histórico fica).</div></div>
+  <div class="box" id="boxHist"><h2>Histórico de alterações do cadastro<span class="sp"></span><span class="muted">${H.length} registro(s)</span><button class="btn sec" data-act="xlsHist">Baixar histórico (Excel)</button></h2>
+  <div class="bar"><input class="in" id="fh" placeholder="Filtrar por produto, código, campo ou pessoa" value="${esc(f.h||"")}" style="min-width:320px">${f.h?`<button class="lk" data-act="histLimpar">limpar filtro</button>`:""}</div>
+  ${tabela("hist",[{h:"Quando",v:h=>h[0],f:h=>dBR(h[0])+" "+String(h[0]).slice(11,16)},{h:"Código",v:h=>h[1]},{h:"Produto",v:h=>h[2]},{h:"Ação",v:h=>h[3]},{h:"Campo",v:h=>h[4]},{h:"De",v:h=>h[5],f:h=>`<span style="color:#9A3D00">${esc(h[5])}</span>`},{h:"Para",v:h=>h[6],f:h=>`<b>${esc(h[6])}</b>`},{h:"Quem",v:h=>h[7]},{h:"Motivo",v:h=>h[8]}],H)}</div>`}
+async function salvarItem(body,ok){if(!P.quem){P.msg="!Saia e entre de novo informando seu nome (fica no histórico).";return render()}
+  P.salvando=true;P.msg="";render();
+  try{const r=await api(Object.assign({a:"item",quem:P.quem},body));P.salvando=false;ok(r);await carregar()}catch(e){P.salvando=false;P.msg="!"+e.message;render()}}
+const CAD={
+  novoSalvar:()=>{const nv=P.nv;const cat=nv.Categoria==="__nova"?(nv.CatNova||"").trim():nv.Categoria;
+    if(!(nv.Produto||"").trim()||!cat){P.msg="!Preencha o nome e a categoria.";return render()}
+    salvarItem({op:"novo",saldoInicial:nv.saldo||0,motivo:nv.Observacao||"",item:{Produto:nv.Produto,Categoria:cat,Endereco:nv.Endereco||"",Unidade:nv.Unidade||"UNID",EstoqueMinimo:nv.EstoqueMinimo||"",Observacao:nv.Observacao||""}},
+      r=>{P.msg="Produto cadastrado: "+r.id+" – "+nv.Produto.trim()+". Já aparece no app do estoquista ao tocar em atualizar.";P.nv={}})},
+  edAbrir:v=>{const i=I(P.d.itens.find(r=>r[0]===v));P.ed=v;P.ev={Produto:i.p,Categoria:i.cat,Endereco:i.end,Unidade:i.un,EstoqueMinimo:i.min||"",Ativo:i.ativo?"Sim":"Não",motivo:""};P.msg="";render()},
+  edCancelar:()=>{P.ed="";P.ev={};render()},
+  edSalvar:()=>{const ev=P.ev;const id=P.ed;
+    salvarItem({op:"editar",id:id,motivo:ev.motivo||"",item:{Produto:ev.Produto,Categoria:ev.Categoria,Endereco:ev.Endereco,Unidade:ev.Unidade,EstoqueMinimo:ev.EstoqueMinimo,Ativo:ev.Ativo}},
+      r=>{P.msg=r.nada?"Nada foi alterado em "+id+".":id+": "+r.alterados+" alteração(ões) salva(s) e registrada(s) no histórico.";P.ed="";P.ev={}})},
+  histItem:v=>{P.f.h=v;render();const b=$("boxHist");if(b)b.scrollIntoView({behavior:"smooth"})},
+  histLimpar:()=>{P.f.h="";render()},
+  xlsCad:()=>baixar("Cadastro_itens_"+hojeArq()+".xlsx",xlsx("Cadastro",[{h:"ID",w:11},{h:"Produto",w:46},{h:"Categoria",w:18},{h:"Endereço",w:11},{h:"Unidade",w:9},{h:"Estoque mínimo",w:14,t:"n1"},{h:"Saldo",w:9,t:"n1"},{h:"Ativo",w:7}],
+    P.d.itens.map(I).map(i=>[i.id,i.p,i.cat,i.end,i.un,i.min||"",i.saldo,i.ativo?"Sim":"Não"]))),
+  xlsHist:()=>baixar("Historico_cadastro_"+hojeArq()+".xlsx",xlsx("Historico",[{h:"Quando",w:17},{h:"Código",w:11},{h:"Produto",w:40},{h:"Ação",w:13},{h:"Campo",w:15},{h:"De",w:30},{h:"Para",w:30},{h:"Quem",w:18},{h:"Motivo",w:30}],
+    P.d.cad.hist.map(h=>[String(h[0]).replace("T"," "),...h.slice(1)])))
+};
 /* ---------------- Excel ---------------- */
 function baixar(nome,conteudo,tipo){const a=document.createElement("a");a.href=URL.createObjectURL(conteudo instanceof Blob?conteudo:new Blob([conteudo],{type:tipo+";charset=utf-8"}));a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
 /* ---------------- Excel (.xlsx) sem biblioteca: zip "store" + XML ---------------- */
@@ -191,19 +265,22 @@ const XL={
     baixar("Ficha_"+pes.replace(/\W+/g,"_")+".xlsx",xlsx("Ficha",[{h:"Data",w:11,t:"d"},{h:"ID Produto",w:11},{h:"Produto",w:46},{h:"Categoria",w:17},{h:"Qtd",w:8,t:"n1"},{h:"Unidade",w:8},{h:"Estoquista",w:20}],L.map(m=>[m.d,m.item,m.p,m.cat,m.q,m.un,m.est])))}
 };
 const AC=Object.assign({
-  entrar:()=>{P.senha=$("senha").value.trim();salvar();P.erro="";render();carregar()},
-  sair:()=>{P.senha="";P.d=null;salvar();render()},
+  entrar:()=>{P.senha=$("senha").value.trim();P.quem=$("quem").value.trim();salvar();P.erro="";render();carregar()},
+  sair:()=>{P.senha="";P.d=null;P.ed="";P.nv={};salvar();render()},
   recarregar:()=>carregar(),
-  tab:v=>{P.tab=v;P.f={};salvar();render()},
+  tab:v=>{P.tab=v;P.f={};P.msg="";P.ed="";salvar();render()},
   periodo:()=>{P.de=$("pde").value;P.ate=$("pate").value;if(P.de>P.ate)[P.de,P.ate]=[P.ate,P.de];carregar()},
   ord:v=>{const[n,c]=v.split(":");const o=P.ord[n];P.ord[n]={c:+c,d:o&&o.c===+c?-o.d:1};render()}
-},XL);
+},XL,CAD);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const f=AC[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v)}});
-document.addEventListener("input",e=>{const t=e.target;const m={fb:"b"}[t.id];if(m){P.f[m]=t.value;P.foco=t.id;render()}});
-document.addEventListener("change",e=>{const t=e.target;const m={fc:"c",fs:"s",ft:"t",fpes:"pes"}[t.id];if(m){P.f[m]=t.value;render()}});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="senha")AC.entrar()});
+document.addEventListener("input",e=>{const t=e.target;const m={fb:"b",fh:"h"}[t.id];if(m){P.f[m]=t.value;P.foco=t.id;render();return}
+  if(t.id&&t.id.startsWith("n_")){P.nv[t.id.slice(2)]=t.value;if(t.id==="n_CatNova"){const p=$("n_Produto");const el=document.querySelector(".box h2 .muted b");if(el)el.textContent=prevId(t.value.trim().toUpperCase())}}
+  if(t.id&&t.id.startsWith("e_"))P.ev[t.id.slice(2)]=t.value});
+document.addEventListener("change",e=>{const t=e.target;const m={fc:"c",fs:"s",ft:"t",fpes:"pes",fa:"a"}[t.id];if(m){P.f[m]=t.value;render();return}
+  if(t.id==="n_Categoria"){P.nv.Categoria=t.value;render()}else if(t.id&&t.id.startsWith("n_"))P.nv[t.id.slice(2)]=t.value;else if(t.id&&t.id.startsWith("e_"))P.ev[t.id.slice(2)]=t.value});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.target.id==="senha"||e.target.id==="quem"))AC.entrar()});
 render();if(P.senha)carregar();
-setInterval(()=>{if(P.senha&&!document.hidden)carregar()},5*60000);
+setInterval(()=>{const editando=P.tab==="cadastro"&&(P.ed||Object.values(P.nv).some(v=>String(v||"").trim()&&v!=="UNID"));if(P.senha&&!document.hidden&&!editando&&!P.salvando)carregar()},5*60000);
 </script>
 </body>
 </html>
