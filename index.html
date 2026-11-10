@@ -78,10 +78,10 @@ textarea.in{height:auto;min-height:64px;padding:10px 12px;resize:vertical}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 <script>
-const VERSAO_APP="1.0";
+const VERSAO_APP="1.1";
 const KEY="almox_v1";
 const API_PADRAO=(window.ALMOX_API||"");
-const TIPO_INFO={"Saída":{ic:"⬆",txt:"Saída",pes:"Para quem (colaborador ou setor)",ob:true},"Entrada":{ic:"⬇",txt:"Entrada",pes:"Fornecedor (opcional)",ob:false},
+const TIPO_INFO={"Saída":{ic:"⬆",txt:"Saída",pes:"Quem retirou (colaborador ou setor)",ob:true},"Entrada":{ic:"⬇",txt:"Entrada",pes:"Fornecedor (opcional)",ob:false},
   "Devolução":{ic:"↩",txt:"Devolução",pes:"Quem devolveu",ob:true},"Ajuste (+)":{ic:"+",txt:"Ajuste (+)",pes:"",ob:false},"Ajuste (-)":{ic:"−",txt:"Ajuste (−)",pes:"",ob:false}};
 const NIV={negativo:"Negativo",zerado:"Zerado",critico:"Crítico",atencao:"Atenção",ok:""};
 let S=carregar();
@@ -120,7 +120,7 @@ function render(){
   if(!online())UI.tela="config";else if(!S.user&&UI.tela!=="config")UI.tela="login";else if(!UI.tela)UI.tela="inicio";
   const f={config:tConfig,login:tLogin,inicio:tInicio,lote:tLote,itens:tItens,ok:tOk,criticos:tCriticos,ultimos:tUltimos,saldo:tItens}[UI.tela]||tInicio;
   $("app").innerHTML=f();
-  if(UI.tela==="itens"||UI.tela==="saldo")lista();
+  if(UI.tela==="itens"||UI.tela==="saldo")lista();if(UI.tela==="lote")listaLote();
   if(UI.foco){const el=$(UI.foco);UI.foco="";if(el){el.focus();if(el.select)try{el.select()}catch(_){}}}
 }
 function tConfig(){return hd("Configurar aparelho")+`<div class="body">
@@ -156,18 +156,30 @@ function tLote(){const L=S.lote;const T=TIPO_INFO[L.tipo];const aj=L.tipo.starts
   const its=L.itens.map((x,i)=>{const it=item(x.id)||{p:x.id,un:"",saldo:0,nv:"ok"};const sinal=["Saída","Ajuste (-)"].includes(L.tipo)?-1:1;const dep=it.saldo+sinal*(Number(x.q)||0);
     return `<div class="ci"><div class="x"><div class="nm">${esc(it.p)}</div><div class="muted">${esc(x.id)}${it.end?" · "+esc(it.end):""} · saldo ${nf(it.saldo)} → <b id="dp${i}" data-s="${it.saldo}" data-g="${sinal}" style="color:${dep<0?"var(--err)":"inherit"}">${nf(dep)}</b> ${esc(it.un)}</div></div>
     <div class="q"><button data-act="qm" data-v="${i}">−</button><input id="q${i}" data-i="${i}" class="qin" type="number" inputmode="decimal" min="0" step="any" value="${esc(x.q)}"><button data-act="qp" data-v="${i}">+</button></div><button class="rm" data-act="rm" data-v="${i}" title="tirar">×</button></div>`}).join("");
+  const pesHtml=T.pes?`<div class="lbl">${T.pes}</div><input class="in" id="pes" list="dlp" value="${esc(L.pessoa)}" autocomplete="off" placeholder="nome de quem retirou / setor"><datalist id="dlp">${S.pessoas.filter(p=>L.tipo==="Entrada"?p[1]!=="Colaborador":p[1]!=="Fornecedor").map(p=>`<option value="${esc(p[0])}">`).join("")}</datalist>`:"";
   return hd(T.txt,"inicio")+`<div class="body">
   ${aj?`<div class="tipo-bar">${["Ajuste (+)","Ajuste (-)"].map(t=>`<span class="chip ${L.tipo===t?"on":""}" data-act="tipo" data-v="${t}">${TIPO_INFO[t].txt} ${t.includes("+")?"sobrou":"faltou"}</span>`).join("")}</div>`:""}
-  ${T.pes?`<div class="lbl">${T.pes}</div><input class="in" id="pes" list="dlp" value="${esc(L.pessoa)}" autocomplete="off" placeholder="digite o nome"><datalist id="dlp">${S.pessoas.filter(p=>L.tipo==="Entrada"?p[1]!=="Colaborador":p[1]!=="Fornecedor").map(p=>`<option value="${esc(p[0])}">`).join("")}</datalist>`:""}
+  <div class="lbl" style="margin-top:4px"><b>1. Produto</b> – digite o nome e toque no item</div>
+  <input class="in" id="bl" value="${esc(UI.bl||"")}" autocomplete="off" placeholder="ex.: sabão, luva, arame…" style="border:2px solid var(--dark)">
+  <div id="rl"></div>
+  ${L.itens.length?`<div class="lbl"><b>Itens deste lançamento (${L.itens.length})</b></div><div class="cart">${its}</div>`:""}
+  <div style="text-align:right"><button class="linkbtn" data-act="ir" data-v="itens">ver lista completa por categoria</button></div>
+  <div class="lbl"><b>2. ${L.tipo==="Entrada"?"Fornecedor e nota":aj?"Motivo":"Para quem"}</b></div>
+  ${pesHtml}
   <div class="row2"><div><div class="lbl">Data</div><input class="in" id="dt" type="date" max="${hoje()}" value="${esc(L.data)}"></div>
   ${L.tipo==="Entrada"?`<div><div class="lbl">Nota fiscal</div><input class="in" id="nf" value="${esc(L.nf)}" autocomplete="off"></div>`:"<div></div>"}</div>
-  <div class="lbl">Itens</div>
-  ${L.itens.length?`<div class="cart">${its}</div>`:`<div class="empty" style="background:#fff;border:1px dashed var(--bd);border-radius:10px">Nenhum item ainda.</div>`}
-  <button class="btn sec" style="margin-top:10px" data-act="ir" data-v="itens">+ Adicionar item</button>
   <div class="lbl">${aj?"Motivo do ajuste (obrigatório)":"Observação (opcional)"}</div><textarea class="in" id="obs">${esc(L.obs)}</textarea>
   ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}</div>
-  <div class="foot"><button class="btn" data-act="enviar" ${L.itens.length&&!UI.enviando?"":"disabled"}>${UI.enviando?"Enviando…":"Confirmar "+T.txt.toLowerCase()+" ("+L.itens.length+")"}</button>
+  <div class="foot"><button class="btn" data-act="enviar" ${L.itens.length&&!UI.enviando?"":"disabled"}>${UI.enviando?"Enviando…":L.itens.length?"Confirmar "+T.txt.toLowerCase()+" ("+L.itens.length+" item"+(L.itens.length>1?"s":"")+")":"Escolha pelo menos 1 produto"}</button>
   <button class="linkbtn" data-act="descartar">descartar este lançamento</button></div>`}
+/* busca de produto dentro do lançamento: mostra o saldo e, na saída, só deixa escolher o que tem em estoque */
+function listaLote(){const el=$("rl");if(!el||!S.lote)return;const ws=semAc(UI.bl||"").trim().split(/\s+/).filter(Boolean);
+  if(!ws.length){el.innerHTML="";return}
+  const sai=["Saída","Ajuste (-)"].includes(S.lote.tipo);const ja=S.lote.itens.map(x=>x.id);
+  let L=S.itens.map(I).filter(i=>ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w)));
+  const tot=L.length;L=L.sort((a,b)=>(sai?(b.saldo>0)-(a.saldo>0):0)||a.p.localeCompare(b.p,"pt-BR")).slice(0,12);
+  el.innerHTML=(L.map(i=>{const sem=sai&&i.saldo<=0;return `<div class="card ${ja.includes(i.id)?"escolhido":""}" ${sem?'style="opacity:.55;cursor:not-allowed"':`data-act="pick" data-v="${esc(i.id)}"`}><div class="l1"><div><div class="nm">${esc(i.p)}</div><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · <b>"+esc(i.end)+"</b>":""}</div></div>${sem?`<span class="sd n-zerado">sem estoque</span>`:sdChip(i)}</div></div>`}).join("")
+    ||`<div class="empty">Nenhum produto com “${esc(UI.bl)}”. Tente outra palavra.</div>`)+(tot>12?`<div class="muted" style="text-align:center;margin-bottom:8px">Mostrando 12 de ${tot}. Digite mais para filtrar.</div>`:"")}
 function tItens(){const cons=UI.tela==="saldo";const cats=[...new Set(S.itens.map(r=>r[2]))].sort();
   return hd(cons?"Consultar saldo":"Escolher item",cons?"inicio":"lote")+`<div class="body">
   <input class="in" id="bi" placeholder="Procurar por nome ou código" value="${esc(UI.busca)}" autocomplete="off">
@@ -212,9 +224,9 @@ const AC={
   salvarCfg:async()=>{S.cfg.chave=$("cChave").value.trim();S.cfg.api=$("cApi").value.trim();if(!S.cfg.dev)S.cfg.dev="A"+Math.random().toString(36).slice(2,6).toUpperCase();salvar();
     UI.erro="";if(await baixar(true)){UI.tela="login";render()}else{UI.erro="Não conectou. Confira a chave, o endereço e a internet.";UI.tela="config";render()}},
   novo:v=>{if(S.lote&&S.lote.itens.length&&S.lote.tipo!==v&&!confirm("Há um lançamento de "+S.lote.tipo+" não enviado. Descartar e começar outro?"))return ir("lote");
-    if(!S.lote||!S.lote.itens.length||S.lote.tipo!==v)UI.cat="",S.lote={id:"",tipo:v,pessoa:"",data:hoje(),nf:"",obs:"",itens:[]};salvar();ir("lote")},
+    if(!S.lote||!S.lote.itens.length||S.lote.tipo!==v)UI.cat="",S.lote={id:"",tipo:v,pessoa:"",data:hoje(),nf:"",obs:"",itens:[]};UI.bl="";salvar();ir("lote");const b=$("bl");if(b)b.focus()},
   tipo:v=>{ler();S.lote.tipo=v;salvar();render()},
-  pick:v=>{const L=S.lote;const i=L.itens.findIndex(x=>x.id===v);if(i<0)L.itens.push({id:v,q:1});L.id="";salvar();UI.tela="lote";render();
+  pick:v=>{ler();const L=S.lote;const i=L.itens.findIndex(x=>x.id===v);if(i<0)L.itens.push({id:v,q:1});L.id="";UI.bl="";salvar();UI.tela="lote";render();
     const k=L.itens.findIndex(x=>x.id===v);const e=$("q"+k);if(e){e.focus();e.select();e.scrollIntoView({block:"center"})}},
   qm:v=>{ler();const x=S.lote.itens[+v];x.q=Math.max(0,(Number(x.q)||0)-1);S.lote.id="";salvar();render()},
   qp:v=>{ler();const x=S.lote.itens[+v];x.q=(Number(x.q)||0)+1;S.lote.id="";salvar();render()},
@@ -245,9 +257,10 @@ const AC={
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b||!b.dataset.act)return;const f=AC[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v)}});
 document.addEventListener("input",e=>{const t=e.target;
   if(t.id==="bi"){UI.busca=t.value;lista()}
+  if(t.id==="bl"){UI.bl=t.value;listaLote()}
   if(t.id==="busca"){UI.busca=t.value;const p=t.selectionStart;render();const n=$("busca");if(n){n.focus();n.setSelectionRange(p,p)}}
   if(t.classList&&t.classList.contains("qin")){ler();S.lote.id="";const d=$("dp"+t.dataset.i);if(d){const v=Number(d.dataset.s)+Number(d.dataset.g)*(Number(String(t.value).replace(",","."))||0);d.textContent=nf(v);d.style.color=v<0?"var(--err)":"inherit"}}});
-document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="pin")AC.entrar();if(e.key==="Enter"&&e.target.id==="estMot")AC.estOk()});
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="bl"){const c=document.querySelector("#rl [data-act=pick]");if(c){e.preventDefault();AC.pick(c.dataset.v)}}if(e.key==="Enter"&&e.target.id==="pin")AC.entrar();if(e.key==="Enter"&&e.target.id==="estMot")AC.estOk()});
 /* link de instalação: .../ALMOXARIFADO/#chave=XXXX (a parte depois do # não vai para o GitHub) */
 (function(){try{const h=new URLSearchParams(location.hash.slice(1));const k=(h.get("chave")||"").trim();if(!k)return;
   S.cfg.chave=k;if(h.get("api"))S.cfg.api=h.get("api");if(!S.cfg.api)S.cfg.api=API_PADRAO;if(!S.cfg.dev)S.cfg.dev="A"+Math.random().toString(36).slice(2,6).toUpperCase();
