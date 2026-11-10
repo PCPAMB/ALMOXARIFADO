@@ -70,7 +70,7 @@ tr.edit td{background:var(--limeL)!important;vertical-align:middle}tr.edit .in,t
 <script>
 const KEY="almox_painel_v1";
 const API=(window.ALMOX_API||"");
-let P={senha:"",quem:"",d:null,tab:"criticos",de:"",ate:"",f:{},ord:{},nv:{},ev:{},ed:"",msg:"",salvando:false};
+let P={jn:null,ex:null,senha:"",quem:"",d:null,tab:"criticos",de:"",ate:"",f:{},ord:{},nv:{},ev:{},ed:"",msg:"",salvando:false};
 try{const v=JSON.parse(localStorage.getItem(KEY)||"{}");P.senha=v.senha||"";P.quem=v.quem||"";P.tab=v.tab||"criticos"}catch(e){}
 const salvar=()=>{try{localStorage.setItem(KEY,JSON.stringify({senha:P.senha,quem:P.quem,tab:P.tab}))}catch(e){}};
 const $=id=>document.getElementById(id);
@@ -82,7 +82,7 @@ const NIV={negativo:"Negativo",zerado:"Zerado",critico:"Crítico",atencao:"Aten�
 const ORD_NIV={negativo:0,zerado:1,critico:2,atencao:3,ok:4};
 const SAIDA=t=>t==="Saída"||t==="Ajuste (-)";
 /* itens: [id, produto, cat, end, un, saldo, min, nível, c30, c90, últimaSaída, sugestão, ativo] */
-const I=r=>({id:r[0],p:r[1],cat:r[2],end:r[3],un:r[4],saldo:r[5],min:r[6],nv:r[7],c30:r[8],c90:r[9],ult:r[10],sug:r[11],ativo:r[12],cob:r[8]>0?Math.floor(r[5]/(r[8]/30)):null});
+const I=r=>({id:r[0],p:r[1],cat:r[2],end:r[3],un:r[4],saldo:r[5],min:r[6],nv:r[7],c30:r[8],c90:r[9],ult:r[10],sug:r[11],ativo:r[12],exc:r[13],nmov:r[14],cob:r[8]>0?Math.floor(r[5]/(r[8]/30)):null});
 /* movs: [id, data, tipo, item, produto, cat, qtd, un, pessoa, nf, obs, estoquista, status, origem] */
 const M=r=>({id:r[0],d:r[1],t:r[2],item:r[3],p:r[4],cat:r[5],q:r[6],un:r[7],pes:r[8],nf:r[9],obs:r[10],est:r[11],st:r[12],org:r[13]});
 async function api(body){const r=await fetch(API,{method:"POST",body:JSON.stringify(Object.assign({k:P.senha},body)),redirect:"follow"});const j=await r.json();if(!j.ok)throw new Error(j.erro||"Erro");return j}
@@ -158,7 +158,7 @@ function prevId(cat){if(!cat)return "—";const pre=(P.d.cad.prefixos||{})[cat]|
   let mx=0;P.d.itens.forEach(r=>{const m=new RegExp("^"+pre+"-(\\d+)$").exec(r[0]);if(m)mx=Math.max(mx,+m[1])});const n=mx+1;return pre+"-"+(n<10?"0"+n:n)}
 function vCad(){const cats=catsAll();const nv=P.nv;const catN=nv.Categoria==="__nova"?(nv.CatNova||"").trim().toUpperCase():nv.Categoria||"";
   const f=P.f;const ws=semAc(f.b).split(/\s+/).filter(Boolean);
-  const L=P.d.itens.map(I).filter(i=>(!f.c||i.cat===f.c)&&(f.a==="todos"||(f.a==="inativos"?!i.ativo:i.ativo))&&ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR"));
+  const L=P.d.itens.map(I).filter(i=>(!f.c||i.cat===f.c)&&(f.a==="todos"?!i.exc:f.a==="inativos"?(!i.ativo&&!i.exc):f.a==="excluidos"?i.exc:i.ativo)&&ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR"));
   const hb=semAc(f.h||"").trim();const H=P.d.cad.hist.filter(h=>!hb||semAc(h.join(" ")).includes(hb));
   const ev=P.ev;const obs=P.d.cad.obs||{};
   const linha=i=>P.ed===i.id?`<tr class="edit"><td><b>${esc(i.id)}</b></td>
@@ -172,7 +172,7 @@ function vCad(){const cats=catsAll();const nv=P.nv;const catN=nv.Categoria==="__
      <td style="min-width:230px"><input class="in" id="e_motivo" placeholder="motivo da alteração" value="${esc(ev.motivo||"")}" style="margin-bottom:6px">
      <button class="btn" data-act="edSalvar" ${P.salvando?"disabled":""}>Salvar</button> <button class="btn sec" data-act="edCancelar">Cancelar</button></td></tr>`
     :`<tr class="${i.ativo?"":"inat"}"><td>${esc(i.id)}</td><td><b>${esc(i.p)}</b>${obs[i.id]?`<div class="muted">${esc(obs[i.id])}</div>`:""}</td><td>${esc(i.cat)}</td><td>${esc(i.end)}</td><td>${esc(i.un)}</td><td class="n">${i.min?nf(i.min):"—"}</td><td class="n">${nf(i.saldo)}</td><td>${i.ativo?"Sim":"<b>Não</b>"}</td>
-     <td><button class="lk" data-act="edAbrir" data-v="${esc(i.id)}">Editar</button><button class="lk" data-act="histItem" data-v="${esc(i.id)}">Histórico</button></td></tr>`;
+     <td style="white-space:nowrap">${i.exc?`<button class="lk" data-act="histItem" data-v="${esc(i.id)}">Histórico</button>`:`<button class="lk" data-act="edAbrir" data-v="${esc(i.id)}">Editar</button><button class="lk" data-act="jnAbrir" data-v="${esc(i.id)}">Juntar</button>${!i.nmov&&!i.saldo?`<button class="lk" style="color:var(--err)" data-act="exAbrir" data-v="${esc(i.id)}">Excluir</button>`:""}<button class="lk" data-act="histItem" data-v="${esc(i.id)}">Histórico</button>`}</td></tr>`;
   return `<datalist id="dlu">${UNID.map(u=>`<option value="${u}">`).join("")}</datalist>
   <div class="box"><h2>Novo produto<span class="sp"></span><span class="muted">código automático: <b>${esc(prevId(catN))}</b></span></h2>
   <div class="fg"><div><label>Nome do produto *</label><input class="in" id="n_Produto" value="${esc(nv.Produto||"")}" placeholder="ex.: Luva nitrílica tamanho G"></div>
@@ -185,14 +185,15 @@ function vCad(){const cats=catsAll();const nv=P.nv;const catN=nv.Categoria==="__
   <div class="bar" style="margin:10px 0 0"><input class="in" id="n_Observacao" value="${esc(nv.Observacao||"")}" placeholder="observação (opcional, ex.: CA 12345, caixa com 12)" style="flex:1;min-width:260px">
    <button class="btn" data-act="novoSalvar" ${P.salvando?"disabled":""}>${P.salvando?"Salvando…":"Cadastrar produto"}</button></div>
   <div class="muted" style="margin-top:6px">O saldo inicial entra como “Ajuste (+)” com seu nome. Se o material ainda vai chegar, deixe 0 e lance a Entrada pelo app quando chegar.</div></div>
-  <div class="box"><h2>Produtos cadastrados<span class="sp"></span><span class="muted">${L.length} itens</span><button class="btn sec" data-act="xlsCad">Baixar cadastro (Excel)</button></h2>
+  ${caixaJuntar()}${caixaExcluir()}${caixaDup()}
+  <div class="box" id="boxLista"><h2>Produtos cadastrados<span class="sp"></span><span class="muted">${L.length} itens</span><button class="btn sec" data-act="xlsCad">Baixar cadastro (Excel)</button></h2>
   <div class="bar"><input class="in" id="fb" placeholder="Procurar produto, código ou endereço" value="${esc(f.b||"")}" style="min-width:280px">
    <select class="sel" id="fc"><option value="">Todas as categorias</option>${cats.map(c=>`<option ${f.c===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
-   <select class="sel" id="fa"><option value="">Ativos</option><option value="inativos" ${f.a==="inativos"?"selected":""}>Inativos</option><option value="todos" ${f.a==="todos"?"selected":""}>Todos</option></select></div>
+   <select class="sel" id="fa"><option value="">Ativos</option><option value="inativos" ${f.a==="inativos"?"selected":""}>Inativos</option><option value="todos" ${f.a==="todos"?"selected":""}>Todos</option><option value="excluidos" ${f.a==="excluidos"?"selected":""}>Juntados / excluídos</option></select></div>
   <div class="tw"><table><tr><th>Código</th><th>Produto</th><th>Categoria</th><th>Endereço</th><th>Unid.</th><th class="n">Mínimo</th><th class="n">Saldo</th><th>Ativo</th><th></th></tr>
   ${L.slice(0,300).map(linha).join("")||`<tr><td colspan="9" class="muted" style="padding:18px;text-align:center">Nada encontrado.</td></tr>`}</table></div>
   ${L.length>300?`<div class="muted" style="margin-top:6px">Mostrando 300 de ${L.length}. Use a busca.</div>`:""}
-  <div class="muted" style="margin-top:6px">O código não muda. Ao trocar o nome, o histórico de entradas e saídas continua ligado ao mesmo produto. Para tirar um item de uso, mude Ativo para “Não” (ele some do app, mas o histórico fica).</div></div>
+  <div class="muted" style="margin-top:6px"><b>Juntar</b> = produto duplicado (ex.: “Bom Ar” e “Odorizador de ambiente”): as entradas e saídas passam para o produto que fica e os saldos somam. <b>Excluir</b> só aparece para item sem nenhum movimento e sem saldo. O código não muda. Ao trocar o nome, o histórico de entradas e saídas continua ligado ao mesmo produto. Para tirar um item de uso, mude Ativo para “Não” (ele some do app, mas o histórico fica).</div></div>
   <div class="box" id="boxHist"><h2>Histórico de alterações do cadastro<span class="sp"></span><span class="muted">${H.length} registro(s)</span><button class="btn sec" data-act="xlsHist">Baixar histórico (Excel)</button></h2>
   <div class="bar"><input class="in" id="fh" placeholder="Filtrar por produto, código, campo ou pessoa" value="${esc(f.h||"")}" style="min-width:320px">${f.h?`<button class="lk" data-act="histLimpar">limpar filtro</button>`:""}</div>
   ${tabela("hist",[{h:"Quando",v:h=>h[0],f:h=>dBR(h[0])+" "+String(h[0]).slice(11,16)},{h:"Código",v:h=>h[1]},{h:"Produto",v:h=>h[2]},{h:"Ação",v:h=>h[3]},{h:"Campo",v:h=>h[4]},{h:"De",v:h=>h[5],f:h=>`<span style="color:#9A3D00">${esc(h[5])}</span>`},{h:"Para",v:h=>h[6],f:h=>`<b>${esc(h[6])}</b>`},{h:"Quem",v:h=>h[7]},{h:"Motivo",v:h=>h[8]}],H)}</div>`}
@@ -215,6 +216,59 @@ const CAD={
     P.d.itens.map(I).map(i=>[i.id,i.p,i.cat,i.end,i.un,i.min||"",i.saldo,i.ativo?"Sim":"Não"]))),
   xlsHist:()=>baixar("Historico_cadastro_"+hojeArq()+".xlsx",xlsx("Historico",[{h:"Quando",w:17},{h:"Código",w:11},{h:"Produto",w:40},{h:"Ação",w:13},{h:"Campo",w:15},{h:"De",w:30},{h:"Para",w:30},{h:"Quem",w:18},{h:"Motivo",w:30}],
     P.d.cad.hist.map(h=>[String(h[0]).replace("T"," "),...h.slice(1)])))
+};
+
+function caixaJuntar(){const j=P.jn;if(!j)return "";const A=I(P.d.itens.find(r=>r[0]===j.de));const B=j.para?I(P.d.itens.find(r=>r[0]===j.para)):null;
+  const ws=semAc(j.busca||"").trim().split(/\s+/).filter(Boolean);
+  const op=ws.length?P.d.itens.map(I).filter(i=>i.ativo&&i.id!==A.id&&ws.every(w=>semAc(i.p+" "+i.id).includes(w))).slice(0,8):[];
+  return `<div class="box" id="boxJn" style="border:2px solid var(--dark)"><h2>Juntar produto duplicado<span class="sp"></span><button class="lk" data-act="jnFechar">fechar</button></h2>
+  <div class="g2" style="gap:12px"><div class="kpi" style="border-left-color:var(--err)"><div class="l">Sai da lista (duplicado)</div><div style="font-size:17px;font-weight:700">${esc(A.p)}</div><div class="muted">${esc(A.id)} · ${esc(A.cat)} · saldo ${nf(A.saldo)} ${esc(A.un)} · ${A.nmov} movimento(s)</div></div>
+  <div class="kpi" style="border-left-color:var(--limeD)"><div class="l">Fica (recebe tudo)</div>${B?`<div style="font-size:17px;font-weight:700">${esc(B.p)}</div><div class="muted">${esc(B.id)} · ${esc(B.cat)} · saldo ${nf(B.saldo)} ${esc(B.un)} · <button class="lk" data-act="jnTrocar">trocar</button></div>`
+    :`<input class="in" id="jbusca" value="${esc(j.busca||"")}" placeholder="procure o produto que vai ficar" style="width:100%;margin-top:4px">${op.map(i=>`<div class="hb" style="grid-template-columns:1fr auto;cursor:pointer;padding:6px 4px;border-bottom:1px solid #eee" data-act="jnEscolher" data-v="${esc(i.id)}"><div><b>${esc(i.p)}</b> <span class="muted">${esc(i.id)} · ${esc(i.cat)}</span></div><div class="muted">${nf(i.saldo)} ${esc(i.un)}</div></div>`).join("")}`}</div></div>
+  ${B?`<div class="${A.un!==B.un?"warn":"okm"}" style="margin-top:12px">${A.un!==B.un?`<b>Unidades diferentes:</b> ${esc(A.un)} × ${esc(B.un)}. Só junte se 1 ${esc(A.un)} for igual a 1 ${esc(B.un)}. <label style="display:block;margin-top:6px"><input type="checkbox" id="jforcar" ${j.forcar?"checked":""}> Confirmo que a unidade é a mesma</label>`
+     :`Resultado: <b>${esc(B.p)}</b> fica com saldo <b>${nf(A.saldo+B.saldo)} ${esc(B.un)}</b> (${nf(B.saldo)} + ${nf(A.saldo)}) e com os ${A.nmov} movimento(s) do duplicado. “${esc(A.p)}” sai da lista.`}</div>
+  <div class="bar" style="margin-top:10px"><input class="in" id="jmotivo" value="${esc(j.motivo||"")}" placeholder="motivo (ex.: mesmo produto com dois nomes)" style="flex:1;min-width:280px">
+  <button class="btn" data-act="jnConfirmar" ${P.salvando?"disabled":""}>${P.salvando?"Juntando…":"Juntar"}</button></div>`:""}</div>`}
+function caixaExcluir(){const x=P.ex;if(!x)return "";const A=I(P.d.itens.find(r=>r[0]===x.id));
+  return `<div class="box" id="boxEx" style="border:2px solid var(--err)"><h2>Excluir produto<span class="sp"></span><button class="lk" data-act="exFechar">fechar</button></h2>
+  <div><b>${esc(A.p)}</b> <span class="muted">${esc(A.id)} · ${esc(A.cat)} · nunca teve movimento</span></div>
+  <div class="bar" style="margin-top:10px"><input class="in" id="xmotivo" value="${esc(x.motivo||"")}" placeholder="motivo (ex.: cadastrado errado)" style="flex:1;min-width:280px">
+  <button class="btn" style="background:var(--err);color:#fff" data-act="exConfirmar" ${P.salvando?"disabled":""}>Excluir de vez</button></div></div>`}
+/* possíveis duplicados: nomes parecidos na mesma categoria */
+function caixaDup(){if(P.f.semDup)return "";
+  const SW=new Set(["de","da","do","com","para","c","e","em","a","o","tam","tamanho"]);
+  /* palavras que mudam o produto (tamanho, cor, modelo): se só elas diferem, NÃO é duplicado */
+  const SZ=new Set(["p","m","g","gg","xg","eg","egg","xgg","pp","maior","menor","medio","grosso","fino","masculino","feminino","s","sem","azul","vermelho","vermelha","preto","preta","branco","branca","verde","amarelo","amarela","cinza"]);
+  const tk=s=>new Set(semAc(s).replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(w=>w&&!SW.has(w)));const so=s=>semAc(s).replace(/[^a-z0-9]/g,"");
+  const L=P.d.itens.map(I).filter(i=>i.ativo).map(i=>({i,t:tk(i.p)}));const out=[];
+  for(let a=0;a<L.length;a++)for(let b=a+1;b<L.length;b++){const x=L[a],y=L[b];if(x.i.cat!==y.i.cat)continue;
+    const ig=so(x.i.p)===so(y.i.p);const df=[...x.t].filter(w=>!y.t.has(w)).concat([...y.t].filter(w=>!x.t.has(w)));
+    if(!ig&&df.some(w=>/\d/.test(w)||SZ.has(w)))continue;
+    let n=0;x.t.forEach(w=>{if(y.t.has(w))n++});const sc=n/Math.max(1,Math.min(x.t.size,y.t.size));
+    if(ig||(sc>=0.75&&n>=2&&df.length<=2))out.push([ig?2:sc,x.i,y.i])}
+  out.sort((a,b)=>b[0]-a[0]);if(!out.length)return "";
+  return `<div class="box"><h2>Possíveis duplicados (nomes parecidos)<span class="sp"></span><span class="muted">${out.length} par(es)</span><button class="lk" data-act="dupOcultar">ocultar</button></h2>
+  <div class="muted" style="margin-bottom:8px">Sugestões automáticas: confira se é mesmo o mesmo produto (marca, CA, unidade e endereço) antes de juntar. Duplicados com nomes bem diferentes, como “Bom Ar” e “Odorizador”, não aparecem aqui: use o botão <b>Juntar</b> na lista.</div>
+  <div class="tw" style="max-height:300px"><table><tr><th>Produto 1</th><th class="n">Saldo</th><th>Produto 2</th><th class="n">Saldo</th><th></th></tr>
+  ${out.slice(0,40).map(([sc,a,b])=>`<tr><td><b>${esc(a.p)}</b><div class="muted">${esc(a.id)}${a.end?" · "+esc(a.end):""}</div></td><td class="n">${nf(a.saldo)} ${esc(a.un)}</td><td><b>${esc(b.p)}</b><div class="muted">${esc(b.id)}${b.end?" · "+esc(b.end):""}</div></td><td class="n">${nf(b.saldo)} ${esc(b.un)}</td>
+   <td style="white-space:nowrap"><button class="lk" data-act="dupJuntar" data-v="${esc(b.id)}|${esc(a.id)}">juntar 2 → 1</button><button class="lk" data-act="dupJuntar" data-v="${esc(a.id)}|${esc(b.id)}">juntar 1 → 2</button></td></tr>`).join("")}</table></div></div>`}
+const rolar=id=>setTimeout(()=>{const b=$(id);if(b)b.scrollIntoView({behavior:"smooth",block:"start"})},30);
+const JN={
+  jnAbrir:v=>{P.jn={de:v,para:"",busca:"",motivo:"",forcar:false};P.ex=null;P.msg="";render();rolar("boxJn");setTimeout(()=>{const b=$("jbusca");if(b)b.focus()},60)},
+  jnFechar:()=>{P.jn=null;render()},
+  jnTrocar:()=>{P.jn.para="";render()},
+  jnEscolher:v=>{P.jn.para=v;render()},
+  dupJuntar:v=>{const[de,para]=v.split("|");P.jn={de,para,busca:"",motivo:"mesmo produto com dois cadastros",forcar:false};P.ex=null;P.msg="";render();rolar("boxJn")},
+  dupOcultar:()=>{P.f.semDup=1;render()},
+  jnConfirmar:()=>{const j=P.jn;if(!j.para){P.msg="!Escolha o produto que vai ficar.";return render()}
+    const A=I(P.d.itens.find(r=>r[0]===j.de)),B=I(P.d.itens.find(r=>r[0]===j.para));
+    if(A.un!==B.un&&!j.forcar){P.msg="!As unidades são diferentes: marque a confirmação ou escolha outro produto.";return render()}
+    if(!confirm(`Juntar “${A.p}” (${A.id}) em “${B.p}” (${B.id})?\n\nAs ${A.nmov} movimentações passam para ${B.id} e ${A.id} sai da lista. Isso não dá para desfazer pelo painel.`))return;
+    salvarItem({op:"juntar",de:j.de,para:j.para,forcar:!!j.forcar,motivo:j.motivo||""},r=>{P.msg=`Juntado: ${A.p} → ${B.p}. ${r.movidos} movimento(s) passaram para ${B.id}; saldo agora ${nf(r.saldo)} ${B.un}.`;P.jn=null})},
+  exAbrir:v=>{P.ex={id:v,motivo:""};P.jn=null;P.msg="";render();rolar("boxEx")},
+  exFechar:()=>{P.ex=null;render()},
+  exConfirmar:()=>{const x=P.ex;if(!(x.motivo||"").trim()){P.msg="!Escreva o motivo da exclusão.";return render()}
+    salvarItem({op:"excluir",id:x.id,motivo:x.motivo},r=>{P.msg="Produto "+r.id+" excluído (fica registrado no histórico).";P.ex=null})}
 };
 /* ---------------- Excel ---------------- */
 function baixar(nome,conteudo,tipo){const a=document.createElement("a");a.href=URL.createObjectURL(conteudo instanceof Blob?conteudo:new Blob([conteudo],{type:tipo+";charset=utf-8"}));a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
@@ -268,19 +322,21 @@ const AC=Object.assign({
   entrar:()=>{P.senha=$("senha").value.trim();P.quem=$("quem").value.trim();salvar();P.erro="";render();carregar()},
   sair:()=>{P.senha="";P.d=null;P.ed="";P.nv={};salvar();render()},
   recarregar:()=>carregar(),
-  tab:v=>{P.tab=v;P.f={};P.msg="";P.ed="";salvar();render()},
+  tab:v=>{P.tab=v;P.f={};P.msg="";P.ed="";P.jn=null;P.ex=null;salvar();render()},
   periodo:()=>{P.de=$("pde").value;P.ate=$("pate").value;if(P.de>P.ate)[P.de,P.ate]=[P.ate,P.de];carregar()},
   ord:v=>{const[n,c]=v.split(":");const o=P.ord[n];P.ord[n]={c:+c,d:o&&o.c===+c?-o.d:1};render()}
-},XL,CAD);
+},XL,CAD,JN);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const f=AC[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v)}});
 document.addEventListener("input",e=>{const t=e.target;const m={fb:"b",fh:"h"}[t.id];if(m){P.f[m]=t.value;P.foco=t.id;render();return}
   if(t.id&&t.id.startsWith("n_")){P.nv[t.id.slice(2)]=t.value;if(t.id==="n_CatNova"){const p=$("n_Produto");const el=document.querySelector(".box h2 .muted b");if(el)el.textContent=prevId(t.value.trim().toUpperCase())}}
-  if(t.id&&t.id.startsWith("e_"))P.ev[t.id.slice(2)]=t.value});
+  if(t.id&&t.id.startsWith("e_"))P.ev[t.id.slice(2)]=t.value;
+  if(t.id==="jbusca"){P.jn.busca=t.value;P.foco="jbusca";render()}if(t.id==="jmotivo")P.jn.motivo=t.value;if(t.id==="xmotivo")P.ex.motivo=t.value});
 document.addEventListener("change",e=>{const t=e.target;const m={fc:"c",fs:"s",ft:"t",fpes:"pes",fa:"a"}[t.id];if(m){P.f[m]=t.value;render();return}
+  if(t.id==="jforcar"){P.jn.forcar=t.checked;return}
   if(t.id==="n_Categoria"){P.nv.Categoria=t.value;render()}else if(t.id&&t.id.startsWith("n_"))P.nv[t.id.slice(2)]=t.value;else if(t.id&&t.id.startsWith("e_"))P.ev[t.id.slice(2)]=t.value});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.target.id==="senha"||e.target.id==="quem"))AC.entrar()});
 render();if(P.senha)carregar();
-setInterval(()=>{const editando=P.tab==="cadastro"&&(P.ed||Object.values(P.nv).some(v=>String(v||"").trim()&&v!=="UNID"));if(P.senha&&!document.hidden&&!editando&&!P.salvando)carregar()},5*60000);
+setInterval(()=>{const editando=P.tab==="cadastro"&&(P.ed||P.jn||P.ex||Object.values(P.nv).some(v=>String(v||"").trim()&&v!=="UNID"));if(P.senha&&!document.hidden&&!editando&&!P.salvando)carregar()},5*60000);
 </script>
 </body>
 </html>
