@@ -45,6 +45,12 @@ tr:hover td{background:#FAFBF7}
 .err{background:var(--errL);border:1px solid var(--err);border-radius:10px;padding:10px 14px;margin-bottom:14px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:900px){.g2{grid-template-columns:1fr}.hd h1{font-size:17px}}
+@media(max-width:700px){.hd{position:static;padding:10px 14px;gap:8px}.hd h1{font-size:16px;flex-basis:100%;order:2}.hd .logo{height:20px}.hd .at{display:none}
+ .tabs{padding:10px 10px 0;overflow-x:auto;flex-wrap:nowrap}.tab{padding:9px 12px;font-size:14px;white-space:nowrap}.wrap{padding:12px 10px 40px}.box{padding:12px}
+ .bar .in,.bar .sel{width:100%;min-width:0!important}.kpi .v{font-size:24px}}
+.pc{border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:#fff}.pc.inat{opacity:.6}
+.pc .t1{font-weight:700;font-size:15.5px}.pc .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.pc .acts button{flex:1;min-width:80px;height:38px;border-radius:8px;border:1px solid var(--dark);background:#fff;font-weight:600;cursor:pointer}
+.pc .acts .x{border-color:var(--err);color:var(--err)}.pc label{font-size:12.5px;color:var(--tx2);display:block;margin:8px 0 3px}.pc .in,.pc .sel{width:100%;height:42px}
 .hb{display:grid;grid-template-columns:minmax(120px,38%) 1fr 70px;gap:8px;align-items:center;font-size:13.5px;padding:3px 0}
 .hb .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hb .r{height:16px;background:var(--lime);border-radius:4px;min-width:2px}
@@ -152,6 +158,7 @@ function vCons(){const L=P.d.movs.map(M).filter(m=>m.t==="Saída"&&m.st!=="Estor
   ${pes?tabela("ficha",[{h:"Data",v:m=>m.d,f:m=>dBR(m.d)},{h:"Item",v:m=>m.p},{h:"Categoria",v:m=>m.cat},{h:"Qtd",n:1,v:m=>m.q,f:m=>nf(m.q)+" "+esc(m.un)},{h:"Estoquista",v:m=>m.est}],ficha.slice().reverse()):""}</div>`}
 
 /* ===================== CADASTRO (só com a senha de gestão) ===================== */
+const CEL=()=>window.innerWidth<700;
 const UNID=["UNID","PAR","PCTS","CX","RL","KIT","FR","KG","L","M"];
 function catsAll(){return [...new Set(P.d.itens.map(r=>r[2]))].sort()}
 function prevId(cat){if(!cat)return "—";const pre=(P.d.cad.prefixos||{})[cat]||(semAc(cat).replace(/[^a-z]/g,"").toUpperCase().slice(0,4)||"ITEM");
@@ -173,6 +180,15 @@ function vCad(){const cats=catsAll();const nv=P.nv;const catN=nv.Categoria==="__
      <button class="btn" data-act="edSalvar" ${P.salvando?"disabled":""}>Salvar</button> <button class="btn sec" data-act="edCancelar">Cancelar</button></td></tr>`
     :`<tr class="${i.ativo?"":"inat"}"><td>${esc(i.id)}</td><td><b>${esc(i.p)}</b>${obs[i.id]?`<div class="muted">${esc(obs[i.id])}</div>`:""}</td><td>${esc(i.cat)}</td><td>${esc(i.end)}</td><td>${esc(i.un)}</td><td class="n">${i.min?nf(i.min):"—"}</td><td class="n">${nf(i.saldo)}</td><td>${i.ativo?"Sim":"<b>Não</b>"}</td>
      <td style="white-space:nowrap">${i.exc?`<button class="lk" data-act="histItem" data-v="${esc(i.id)}">Histórico</button>`:`<button class="lk" data-act="edAbrir" data-v="${esc(i.id)}">Editar</button><button class="lk" data-act="jnAbrir" data-v="${esc(i.id)}">Juntar</button>${!i.nmov&&!i.saldo?`<button class="lk" style="color:var(--err)" data-act="exAbrir" data-v="${esc(i.id)}">Excluir</button>`:""}<button class="lk" data-act="histItem" data-v="${esc(i.id)}">Histórico</button>`}</td></tr>`;
+  const cartao=i=>P.ed===i.id?`<div class="pc" style="border:2px solid var(--limeD);background:var(--limeL)"><div class="t1">${esc(i.id)} · saldo ${nf(i.saldo)} ${esc(i.un)}</div>
+     <label>Nome</label><input class="in" id="e_Produto" value="${esc(ev.Produto)}">
+     <label>Categoria</label><select class="sel" id="e_Categoria">${cats.map(c=>`<option ${ev.Categoria===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+     <div class="g2" style="gap:8px;grid-template-columns:1fr 1fr"><div><label>Endereço</label><input class="in" id="e_Endereco" value="${esc(ev.Endereco)}"></div><div><label>Unidade</label><input class="in" id="e_Unidade" list="dlu" value="${esc(ev.Unidade)}"></div>
+     <div><label>Mínimo</label><input class="in" id="e_EstoqueMinimo" type="number" inputmode="decimal" value="${esc(ev.EstoqueMinimo)}"></div><div><label>Ativo</label><select class="sel" id="e_Ativo"><option ${ev.Ativo==="Sim"?"selected":""}>Sim</option><option ${ev.Ativo==="Não"?"selected":""}>Não</option></select></div></div>
+     <label>Motivo</label><input class="in" id="e_motivo" value="${esc(ev.motivo||"")}" placeholder="motivo da alteração">
+     <div class="acts"><button style="background:var(--lime);border-color:var(--lime)" data-act="edSalvar" ${P.salvando?"disabled":""}>Salvar</button><button data-act="edCancelar">Cancelar</button></div></div>`
+    :`<div class="pc ${i.ativo?"":"inat"}"><div class="t1">${esc(i.p)}</div><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · "+esc(i.end):""} · saldo <b>${nf(i.saldo)} ${esc(i.un)}</b>${i.min?" · mín. "+nf(i.min):""}${i.ativo?"":" · <b>inativo</b>"}</div>${obs[i.id]?`<div class="muted">${esc(obs[i.id])}</div>`:""}
+     <div class="acts">${i.exc?"":`<button data-act="edAbrir" data-v="${esc(i.id)}">Editar</button><button data-act="jnAbrir" data-v="${esc(i.id)}">Juntar</button>${!i.nmov&&!i.saldo?`<button class="x" data-act="exAbrir" data-v="${esc(i.id)}">Excluir</button>`:""}`}<button data-act="histItem" data-v="${esc(i.id)}">Histórico</button></div></div>`;
   return `<datalist id="dlu">${UNID.map(u=>`<option value="${u}">`).join("")}</datalist>
   <div class="box"><h2>Novo produto<span class="sp"></span><span class="muted">código automático: <b>${esc(prevId(catN))}</b></span></h2>
   <div class="fg"><div><label>Nome do produto *</label><input class="in" id="n_Produto" value="${esc(nv.Produto||"")}" placeholder="ex.: Luva nitrílica tamanho G"></div>
@@ -190,13 +206,13 @@ function vCad(){const cats=catsAll();const nv=P.nv;const catN=nv.Categoria==="__
   <div class="bar"><input class="in" id="fb" placeholder="Procurar produto, código ou endereço" value="${esc(f.b||"")}" style="min-width:280px">
    <select class="sel" id="fc"><option value="">Todas as categorias</option>${cats.map(c=>`<option ${f.c===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
    <select class="sel" id="fa"><option value="">Ativos</option><option value="inativos" ${f.a==="inativos"?"selected":""}>Inativos</option><option value="todos" ${f.a==="todos"?"selected":""}>Todos</option><option value="excluidos" ${f.a==="excluidos"?"selected":""}>Juntados / excluídos</option></select></div>
-  <div class="tw"><table><tr><th>Código</th><th>Produto</th><th>Categoria</th><th>Endereço</th><th>Unid.</th><th class="n">Mínimo</th><th class="n">Saldo</th><th>Ativo</th><th></th></tr>
-  ${L.slice(0,300).map(linha).join("")||`<tr><td colspan="9" class="muted" style="padding:18px;text-align:center">Nada encontrado.</td></tr>`}</table></div>
-  ${L.length>300?`<div class="muted" style="margin-top:6px">Mostrando 300 de ${L.length}. Use a busca.</div>`:""}
+  ${CEL()?L.slice(0,80).map(cartao).join("")+(L.length>80?`<div class="muted">Mostrando 80 de ${L.length}. Use a busca.</div>`:"")||`<div class="muted">Nada encontrado.</div>`:`<div class="tw"><table><tr><th>Código</th><th>Produto</th><th>Categoria</th><th>Endereço</th><th>Unid.</th><th class="n">Mínimo</th><th class="n">Saldo</th><th>Ativo</th><th></th></tr>
+  ${L.slice(0,300).map(linha).join("")||`<tr><td colspan="9" class="muted" style="padding:18px;text-align:center">Nada encontrado.</td></tr>`}</table></div>`}
+  ${!CEL()&&L.length>300?`<div class="muted" style="margin-top:6px">Mostrando 300 de ${L.length}. Use a busca.</div>`:""}
   <div class="muted" style="margin-top:6px"><b>Juntar</b> = produto duplicado (ex.: “Bom Ar” e “Odorizador de ambiente”): as entradas e saídas passam para o produto que fica e os saldos somam. <b>Excluir</b> só aparece para item sem nenhum movimento e sem saldo. O código não muda. Ao trocar o nome, o histórico de entradas e saídas continua ligado ao mesmo produto. Para tirar um item de uso, mude Ativo para “Não” (ele some do app, mas o histórico fica).</div></div>
   <div class="box" id="boxHist"><h2>Histórico de alterações do cadastro<span class="sp"></span><span class="muted">${H.length} registro(s)</span><button class="btn sec" data-act="xlsHist">Baixar histórico (Excel)</button></h2>
   <div class="bar"><input class="in" id="fh" placeholder="Filtrar por produto, código, campo ou pessoa" value="${esc(f.h||"")}" style="min-width:320px">${f.h?`<button class="lk" data-act="histLimpar">limpar filtro</button>`:""}</div>
-  ${tabela("hist",[{h:"Quando",v:h=>h[0],f:h=>dBR(h[0])+" "+String(h[0]).slice(11,16)},{h:"Código",v:h=>h[1]},{h:"Produto",v:h=>h[2]},{h:"Ação",v:h=>h[3]},{h:"Campo",v:h=>h[4]},{h:"De",v:h=>h[5],f:h=>`<span style="color:#9A3D00">${esc(h[5])}</span>`},{h:"Para",v:h=>h[6],f:h=>`<b>${esc(h[6])}</b>`},{h:"Quem",v:h=>h[7]},{h:"Motivo",v:h=>h[8]}],H)}</div>`}
+  ${CEL()?H.slice(0,60).map(h=>`<div class="pc"><div class="t1" style="font-size:14px">${esc(h[2])} <span class="muted">${esc(h[1])}</span></div><div class="muted">${esc(h[3])}${h[4]?" · "+esc(h[4]):""}${h[4]?`: <span style="color:#9A3D00">${esc(h[5])}</span> → <b>${esc(h[6])}</b>`:""}</div><div class="muted">${esc(h[7])} · ${dBR(h[0])} ${String(h[0]).slice(11,16)}${h[8]?" · "+esc(h[8]):""}</div></div>`).join("")||`<div class="muted">Nada para mostrar.</div>`:tabela("hist",[{h:"Quando",v:h=>h[0],f:h=>dBR(h[0])+" "+String(h[0]).slice(11,16)},{h:"Código",v:h=>h[1]},{h:"Produto",v:h=>h[2]},{h:"Ação",v:h=>h[3]},{h:"Campo",v:h=>h[4]},{h:"De",v:h=>h[5],f:h=>`<span style="color:#9A3D00">${esc(h[5])}</span>`},{h:"Para",v:h=>h[6],f:h=>`<b>${esc(h[6])}</b>`},{h:"Quem",v:h=>h[7]},{h:"Motivo",v:h=>h[8]}],H)}</div>`}
 async function salvarItem(body,ok){if(!P.quem){P.msg="!Saia e entre de novo informando seu nome (fica no histórico).";return render()}
   P.salvando=true;P.msg="";render();
   try{const r=await api(Object.assign({a:"item",quem:P.quem},body));P.salvando=false;ok(r);await carregar()}catch(e){P.salvando=false;P.msg="!"+e.message;render()}}
@@ -336,6 +352,7 @@ document.addEventListener("change",e=>{const t=e.target;const m={fc:"c",fs:"s",f
   if(t.id==="n_Categoria"){P.nv.Categoria=t.value;render()}else if(t.id&&t.id.startsWith("n_"))P.nv[t.id.slice(2)]=t.value;else if(t.id&&t.id.startsWith("e_"))P.ev[t.id.slice(2)]=t.value});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.target.id==="senha"||e.target.id==="quem"))AC.entrar()});
 render();if(P.senha)carregar();
+let _cw=CEL();window.addEventListener("resize",()=>{if(CEL()!==_cw){_cw=CEL();render()}});
 setInterval(()=>{const editando=P.tab==="cadastro"&&(P.ed||P.jn||P.ex||Object.values(P.nv).some(v=>String(v||"").trim()&&v!=="UNID"));if(P.senha&&!document.hidden&&!editando&&!P.salvando)carregar()},5*60000);
 </script>
 </body>
