@@ -78,7 +78,7 @@ textarea.in{height:auto;min-height:64px;padding:10px 12px;resize:vertical}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 <script>
-const VERSAO_APP="1.2";
+const VERSAO_APP="1.4";
 const KEY="almox_v1";
 const API_PADRAO=(window.ALMOX_API||"");
 const TIPO_INFO={"Saída":{ic:"⬆",txt:"Saída",pes:"Quem retirou (colaborador ou setor)",ob:true},"Entrada":{ic:"⬇",txt:"Entrada",pes:"Fornecedor (opcional)",ob:false},
@@ -118,9 +118,9 @@ function hd(t,voltar){const u=S.user?`<div class="u">${esc(S.user.nome)}<br><but
   return `<div class="hd">${voltar?`<button class="back" data-act="ir" data-v="${voltar}">‹</button>`:`<img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()">`}<div class="t">${esc(t)}</div>${u}</div>`}
 function render(){
   if(!online())UI.tela="config";else if(!S.user&&UI.tela!=="config")UI.tela="login";else if(!UI.tela)UI.tela="inicio";
-  const f={config:tConfig,login:tLogin,inicio:tInicio,lote:tLote,itens:tItens,ok:tOk,criticos:tCriticos,ultimos:tUltimos,saldo:tItens,cad:tCad,cadNovo:tCadNovo,cadEd:tCadEd}[UI.tela]||tInicio;
+  const f={config:tConfig,login:tLogin,inicio:tInicio,lote:tLote,itens:tItens,ok:tOk,criticos:tCriticos,ultimos:tUltimos,saldo:tItens,cad:tCad,cadNovo:tCadNovo,cadEd:tCadEd,cadJn:tCadJn}[UI.tela]||tInicio;
   $("app").innerHTML=f();
-  if(UI.tela==="itens"||UI.tela==="saldo")lista();if(UI.tela==="lote")listaLote();if(UI.tela==="cad")listaCad();
+  if(UI.tela==="itens"||UI.tela==="saldo")lista();if(UI.tela==="lote")listaLote();if(UI.tela==="cad")listaCad();if(UI.tela==="cadJn")listaJn();
   if(UI.foco){const el=$(UI.foco);UI.foco="";if(el){el.focus();if(el.select)try{el.select()}catch(_){}}}
 }
 function tConfig(){return hd("Configurar aparelho")+`<div class="body">
@@ -245,10 +245,29 @@ function tCadEd(){const f=UI.cf;const it=item(UI.cadId)||{id:UI.cadId,saldo:0,un
   <div class="lbl">Ativo</div><select class="sel" id="c_Ativo"><option ${f.Ativo!=="Não"?"selected":""}>Sim</option><option ${f.Ativo==="Não"?"selected":""} value="Não">Não (some do app, histórico fica)</option></select>
   <div class="lbl">Motivo da alteração</div><input class="in" id="c_motivo" value="${esc(f.motivo||"")}" placeholder="ex.: nome errado, mudou de prateleira" autocomplete="off">
   ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}
+  <div class="lbl" style="margin-top:18px"><b>Produto duplicado ou cadastrado errado?</b></div>
+  <div class="row2"><button class="btn sec sm" style="width:100%" data-act="jnApp">Juntar com outro</button>${!it.saldo?`<button class="btn sec sm" style="width:100%;border-color:var(--err);color:var(--err)" data-act="exApp">Excluir</button>`:"<div></div>"}</div>
+  ${UI.exOn?`<div class="err" style="margin-top:8px"><b>Excluir ${esc(it.p)}?</b> Só funciona se o produto nunca teve entrada nem saída.<div class="lbl">Motivo</div><input class="in" id="exMot" placeholder="ex.: cadastrado errado" autocomplete="off"><div class="row2" style="margin-top:8px"><button class="btn sm" style="width:100%;background:var(--err);color:#fff" data-act="exAppOk">Excluir de vez</button><button class="btn sec sm" style="width:100%" data-act="exAppNao">Cancelar</button></div></div>`:""}
   <div class="lbl" style="margin-top:18px"><b>Histórico deste produto</b></div>
   ${!UI.ch?`<div class="muted">Carregando…</div>`:!UI.ch.length?`<div class="muted">Nenhuma alteração registrada ainda.</div>`:`<div class="cart">${UI.ch.map(h=>`<div class="ci"><div class="x"><div class="nm" style="font-size:14px">${esc(h[1])}${h[2]?" · "+esc(h[2]):""}</div>
     <div class="muted">${h[2]?`<span style="color:#9A3D00">${esc(h[3])}</span> → <b>${esc(h[4])}</b> · `:""}${esc(h[5])} · ${h[0].slice(8,10)}/${h[0].slice(5,7)} ${h[0].slice(11,16)}${h[6]?" · "+esc(h[6]):""}</div></div></div>`).join("")}</div>`}
   </div><div class="foot"><button class="btn" data-act="cadSalvarEd" ${UI.enviando?"disabled":""}>${UI.enviando?"Salvando…":"Salvar alteração"}</button></div>`}
+
+
+function tCadJn(){const A=item(UI.cadId)||{id:UI.cadId,p:UI.cadId,saldo:0,un:""};const B=UI.jnPara?item(UI.jnPara):null;const dif=B&&A.un!==B.un;
+  return hd("Juntar duplicado","cadEd")+`<div class="body">
+  <div class="card" style="border-left:6px solid var(--err);cursor:default"><div class="muted">SAI da lista (duplicado)</div><div class="nm">${esc(A.p)}</div><div class="muted">${esc(A.id)} · saldo ${nf(A.saldo)} ${esc(A.un)}</div></div>
+  ${B?`<div class="card" style="border-left:6px solid var(--limeD);cursor:default"><div class="muted">FICA (recebe tudo)</div><div class="nm">${esc(B.p)}</div><div class="muted">${esc(B.id)} · saldo ${nf(B.saldo)} ${esc(B.un)} · <button class="linkbtn" style="padding:0" data-act="jnTroca">trocar</button></div></div>
+    ${dif?`<div class="warn"><b>Unidades diferentes:</b> ${esc(A.un)} × ${esc(B.un)}. Só junte se 1 ${esc(A.un)} for igual a 1 ${esc(B.un)}.<label style="display:flex;gap:8px;align-items:center;margin-top:6px"><input type="checkbox" id="jnForcar" ${UI.jnForcar?"checked":""}> Confirmo que é a mesma unidade</label></div>`
+      :`<div class="info">Resultado: <b>${esc(B.p)}</b> fica com saldo <b>${nf(A.saldo+B.saldo)} ${esc(B.un)}</b> (${nf(B.saldo)} + ${nf(A.saldo)}) e com as entradas e saídas do duplicado. “${esc(A.p)}” sai da lista.</div>`}
+    <div class="lbl">Motivo</div><input class="in" id="jnMot" value="${esc(UI.jnMot||"")}" placeholder="ex.: mesmo produto com dois nomes" autocomplete="off">`
+  :`<div class="lbl"><b>Qual produto FICA?</b> Digite o nome e toque nele</div><input class="in" id="bj" value="${esc(UI.bj||"")}" placeholder="ex.: odorizador" autocomplete="off" style="border:2px solid var(--dark)"><div id="lj" style="margin-top:8px"></div>`}
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}</div>
+  ${B?`<div class="foot"><button class="btn" data-act="jnOk" ${UI.enviando?"disabled":""}>${UI.enviando?"Juntando…":"Juntar"}</button></div>`:""}`}
+function listaJn(){const el=$("lj");if(!el)return;const ws=semAc(UI.bj||"").trim().split(/\s+/).filter(Boolean);
+  if(!ws.length){el.innerHTML="";return}
+  const L=S.itens.map(I).filter(i=>i.id!==UI.cadId&&ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR")).slice(0,15);
+  el.innerHTML=L.map(i=>`<div class="card" data-act="jnPara" data-v="${esc(i.id)}"><div class="l1"><div><div class="nm">${esc(i.p)}</div><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · "+esc(i.end):""}</div></div>${sdChip(i)}</div></div>`).join("")||`<div class="empty">Nenhum produto encontrado.</div>`}
 
 /* ===================== AÇÕES ===================== */
 function ler(){const L=S.lote;if(!L||UI.tela!=="lote")return;const g=id=>{const e=$(id);return e?e.value:null};
@@ -256,9 +275,25 @@ function ler(){const L=S.lote;if(!L||UI.tela!=="lote")return;const g=id=>{const 
   document.querySelectorAll(".qin").forEach(e=>{L.itens[+e.dataset.i].q=e.value});salvar()}
 function ir(t){ler();UI.erro="";if(t==="itens"||t==="saldo"){UI.busca="";UI.foco="bi";if(t==="saldo")UI.cat=""}UI.tela=t;render();window.scrollTo(0,0)}
 const AC={
+  jnApp:()=>{UI.jnPara="";UI.bj="";UI.jnMot="";UI.jnForcar=false;UI.erro="";UI.exOn=false;ir("cadJn");const b=$("bj");if(b)b.focus()},
+  jnPara:v=>{UI.jnPara=v;UI.erro="";render()},
+  jnTroca:()=>{UI.jnPara="";render();const b=$("bj");if(b)b.focus()},
+  jnOk:async()=>{const A=item(UI.cadId),B=item(UI.jnPara);UI.jnMot=($("jnMot")||{}).value||UI.jnMot||"";UI.erro="";
+    if(A.un!==B.un&&!UI.jnForcar){UI.erro="Marque a confirmação da unidade ou escolha outro produto.";return render()}
+    if(!confirm("Juntar “"+A.p+"” em “"+B.p+"”?\n\nAs entradas e saídas passam para "+B.id+" e "+A.id+" sai da lista. Não dá para desfazer pelo app."))return;
+    UI.enviando=true;render();
+    try{const r=await api({a:"item",op:"juntar",de:A.id,para:B.id,forcar:!!UI.jnForcar,motivo:UI.jnMot,uid:S.user.id,unome:S.user.nome,ap:S.cfg.dev});
+      UI.enviando=false;await baixar(false);toast("Juntado: "+r.movidos+" movimento(s) passaram para "+B.id+". Saldo agora "+nf(r.saldo)+" "+B.un+".");AC.cadEd(B.id)}
+    catch(e){UI.enviando=false;UI.erro=e.message.replace(/^UNIDADE\|/,"");render()}},
+  exApp:()=>{UI.exOn=true;UI.erro="";render();const b=$("exMot");if(b)b.focus()},
+  exAppNao:()=>{UI.exOn=false;render()},
+  exAppOk:async()=>{const m=(($("exMot")||{}).value||"").trim();if(!m){UI.erro="Escreva o motivo da exclusão.";return render()}
+    UI.enviando=true;try{const r=await api({a:"item",op:"excluir",id:UI.cadId,motivo:m,uid:S.user.id,unome:S.user.nome,ap:S.cfg.dev});UI.enviando=false;UI.exOn=false;await baixar(false);toast("Produto "+r.id+" excluído.");UI.bc="";ir("cad")}
+    catch(e){UI.enviando=false;UI.erro=e.message;render()}},
+
   cadLista:()=>{UI.bc="";UI.erro="";ir("cad");const b=$("bc");if(b)b.focus()},
   cadNovo:()=>{UI.cf={Unidade:"UNID"};UI.erro="";ir("cadNovo");const b=$("c_Produto");if(b)b.focus()},
-  cadEd:async v=>{const i=item(v);UI.cadId=v;UI.cf={Produto:i.p,Categoria:i.cat,Endereco:i.end,Unidade:i.un,EstoqueMinimo:i.min||"",Ativo:"Sim",motivo:""};UI.ch=null;UI.erro="";ir("cadEd");
+  cadEd:async v=>{const i=item(v);UI.cadId=v;UI.exOn=false;UI.cf={Produto:i.p,Categoria:i.cat,Endereco:i.end,Unidade:i.un,EstoqueMinimo:i.min||"",Ativo:"Sim",motivo:""};UI.ch=null;UI.erro="";ir("cadEd");
     try{UI.ch=(await api({a:"histItem",id:v})).hist}catch(e){UI.ch=[]}if(UI.tela==="cadEd"&&UI.cadId===v)render()},
   cadSalvarNovo:async()=>{const f=UI.cf;const cat=f.Categoria==="__nova"?(f.CatNova||"").trim():f.Categoria;UI.erro="";
     if(!(f.Produto||"").trim())UI.erro="Escreva o nome do produto.";else if(!cat)UI.erro="Escolha a categoria.";if(UI.erro)return render();
@@ -317,10 +352,11 @@ document.addEventListener("input",e=>{const t=e.target;
   if(t.id==="bi"){UI.busca=t.value;lista()}
   if(t.id==="bl"){UI.bl=t.value;listaLote()}
   if(t.id==="bc"){UI.bc=t.value;listaCad()}
+  if(t.id==="bj"){UI.bj=t.value;listaJn()}if(t.id==="jnMot")UI.jnMot=t.value;
   if(t.id&&t.id.startsWith("c_")){UI.cf[t.id.slice(2)]=t.value;if(t.id==="c_CatNova"){const e2=$("cprev");if(e2)e2.textContent=prevIdApp(t.value.trim().toUpperCase())}}
   if(t.id==="busca"){UI.busca=t.value;const p=t.selectionStart;render();const n=$("busca");if(n){n.focus();n.setSelectionRange(p,p)}}
   if(t.classList&&t.classList.contains("qin")){ler();S.lote.id="";const d=$("dp"+t.dataset.i);if(d){const v=Number(d.dataset.s)+Number(d.dataset.g)*(Number(String(t.value).replace(",","."))||0);d.textContent=nf(v);d.style.color=v<0?"var(--err)":"inherit"}}});
-document.addEventListener("change",e=>{const t=e.target;if(t.id&&t.id.startsWith("c_")){UI.cf[t.id.slice(2)]=t.value;if(t.id==="c_Categoria")render()}});
+document.addEventListener("change",e=>{const t=e.target;if(t.id==="jnForcar"){UI.jnForcar=t.checked;return}if(t.id&&t.id.startsWith("c_")){UI.cf[t.id.slice(2)]=t.value;if(t.id==="c_Categoria")render()}});
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="bl"){const c=document.querySelector("#rl [data-act=pick]");if(c){e.preventDefault();AC.pick(c.dataset.v)}}if(e.key==="Enter"&&e.target.id==="pin")AC.entrar();if(e.key==="Enter"&&e.target.id==="estMot")AC.estOk()});
 /* link de instalação: .../ALMOXARIFADO/#chave=XXXX (a parte depois do # não vai para o GitHub) */
 (function(){try{const h=new URLSearchParams(location.hash.slice(1));const k=(h.get("chave")||"").trim();if(!k)return;
