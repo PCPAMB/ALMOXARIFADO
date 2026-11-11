@@ -78,7 +78,7 @@ textarea.in{height:auto;min-height:64px;padding:10px 12px;resize:vertical}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 <script>
-const VERSAO_APP="1.5";
+const VERSAO_APP="1.6";
 const KEY="almox_v1";
 const API_PADRAO=(window.ALMOX_API||"");
 const TIPO_INFO={"Saída":{ic:"⬆",txt:"Saída",pes:"Quem retirou (colaborador ou setor)",ob:true},"Entrada":{ic:"⬇",txt:"Entrada",pes:"Fornecedor (opcional)",ob:false},
@@ -225,7 +225,7 @@ function tCad(){return hd("Cadastro de produtos","inicio")+`<div class="body">
 function listaCad(){const el=$("lc");if(!el)return;const ws=semAc(UI.bc||"").trim().split(/\s+/).filter(Boolean);
   if(!ws.length){el.innerHTML=`<div class="muted">Digite parte do nome para encontrar o produto.</div>`;return}
   const L=S.itens.map(I).filter(i=>ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR"));
-  el.innerHTML=L.slice(0,20).map(i=>`<div class="card" data-act="cadEd" data-v="${esc(i.id)}"><div class="l1"><div><div class="nm">${esc(i.p)}</div><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · "+esc(i.end):""} · ${esc(i.un)}${i.min?" · mín. "+nf(i.min):""}</div></div><span class="chip">editar ›</span></div></div>`).join("")||`<div class="empty">Nenhum produto encontrado. Se for novo, toque em “Cadastrar produto novo”.</div>`}
+  el.innerHTML=L.slice(0,20).map(i=>`<div class="card" data-act="cadEd" data-v="${esc(i.id)}"><div class="l1"><div><div class="nm">${esc(i.p)}</div><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · <b>"+esc(i.end)+"</b>":""}${i.min?" · mín. "+nf(i.min):""}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">${sdChip(i)}<span class="chip">editar ›</span></div></div></div>`).join("")||`<div class="empty">Nenhum produto encontrado. Se for novo, toque em “Cadastrar produto novo”.</div>`}
 function campoCad(f){const cats=catsApp();const nova=f.Categoria==="__nova";
   return `<div class="lbl">Nome do produto *</div><input class="in" id="c_Produto" value="${esc(f.Produto||"")}" autocomplete="off" placeholder="ex.: Luva nitrílica tamanho G">
   <div class="lbl">Categoria *</div><select class="sel" id="c_Categoria"><option value="">escolha…</option>${cats.map(c=>`<option ${f.Categoria===c?"selected":""}>${esc(c)}</option>`).join("")}<option value="__nova" ${nova?"selected":""}>+ nova categoria…</option></select>
