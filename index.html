@@ -78,14 +78,14 @@ textarea.in{height:auto;min-height:64px;padding:10px 12px;resize:vertical}
 <div class="app" id="app"></div>
 <div class="toast" id="toast"></div>
 <script>
-const VERSAO_APP="1.4";
+const VERSAO_APP="1.5";
 const KEY="almox_v1";
 const API_PADRAO=(window.ALMOX_API||"");
 const TIPO_INFO={"Saída":{ic:"⬆",txt:"Saída",pes:"Quem retirou (colaborador ou setor)",ob:true},"Entrada":{ic:"⬇",txt:"Entrada",pes:"Fornecedor (opcional)",ob:false},
   "Devolução":{ic:"↩",txt:"Devolução",pes:"Quem devolveu",ob:true},"Ajuste (+)":{ic:"+",txt:"Ajuste (+)",pes:"",ob:false},"Ajuste (-)":{ic:"−",txt:"Ajuste (−)",pes:"",ob:false}};
 const NIV={negativo:"Negativo",zerado:"Zerado",critico:"Crítico",atencao:"Atenção",ok:""};
 let S=carregar();
-let UI={cf:{},bc:"",ch:null,cadId:"",tela:"",pin:"",uSel:"",busca:"",cat:"",erro:"",enviando:false,ret:"",res:null,ult:null,estId:"",estMot:""};
+let UI={peds:null,pid:"",pq:{},presp:"",cf:{},bc:"",ch:null,cadId:"",tela:"",pin:"",uSel:"",busca:"",cat:"",erro:"",enviando:false,ret:"",res:null,ult:null,estId:"",estMot:""};
 function novo(){return {cfg:{api:API_PADRAO,chave:"",dev:""},users:[],itens:[],pessoas:[],cadEm:"",user:null,lote:null}}
 function carregar(){try{const v=JSON.parse(localStorage.getItem(KEY));if(v&&v.cfg){if(!v.cfg.api)v.cfg.api=API_PADRAO;return Object.assign(novo(),v)}}catch(e){}return novo()}
 function salvar(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -106,7 +106,7 @@ async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncod
 const I=r=>({id:r[0],p:r[1],cat:r[2],end:r[3],un:r[4],saldo:r[5],min:r[6],nv:r[7]});
 function item(id){const r=S.itens.find(x=>x[0]===id);return r?I(r):null}
 async function baixar(avisar){if(!online())return false;
-  try{const j=await api({a:"cad"});S.users=j.users;S.itens=j.itens;S.pessoas=j.pessoas;S.cadEm=new Date().toISOString();salvar();
+  try{const j=await api({a:"cad"});S.users=j.users;S.itens=j.itens;S.pessoas=j.pessoas;S.pedN=j.pedidosNovos||0;document.title=(S.pedN?"("+S.pedN+") ":"")+"Almoxarifado – Estoquista";S.cadEm=new Date().toISOString();salvar();
     if(avisar)toast(`Estoque atualizado: ${j.itens.length} itens.`);return true}
   catch(e){if(avisar)toast(e.message);return false}}
 const criticos=()=>S.itens.map(I).filter(i=>["critico","zerado","negativo"].includes(i.nv));
@@ -118,7 +118,7 @@ function hd(t,voltar){const u=S.user?`<div class="u">${esc(S.user.nome)}<br><but
   return `<div class="hd">${voltar?`<button class="back" data-act="ir" data-v="${voltar}">‹</button>`:`<img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()">`}<div class="t">${esc(t)}</div>${u}</div>`}
 function render(){
   if(!online())UI.tela="config";else if(!S.user&&UI.tela!=="config")UI.tela="login";else if(!UI.tela)UI.tela="inicio";
-  const f={config:tConfig,login:tLogin,inicio:tInicio,lote:tLote,itens:tItens,ok:tOk,criticos:tCriticos,ultimos:tUltimos,saldo:tItens,cad:tCad,cadNovo:tCadNovo,cadEd:tCadEd,cadJn:tCadJn}[UI.tela]||tInicio;
+  const f={config:tConfig,login:tLogin,inicio:tInicio,lote:tLote,itens:tItens,ok:tOk,criticos:tCriticos,ultimos:tUltimos,saldo:tItens,cad:tCad,cadNovo:tCadNovo,cadEd:tCadEd,cadJn:tCadJn,peds:tPeds,ped:tPed}[UI.tela]||tInicio;
   $("app").innerHTML=f();
   if(UI.tela==="itens"||UI.tela==="saldo")lista();if(UI.tela==="lote")listaLote();if(UI.tela==="cad")listaCad();if(UI.tela==="cadJn")listaJn();
   if(UI.foco){const el=$(UI.foco);UI.foco="";if(el){el.focus();if(el.select)try{el.select()}catch(_){}}}
@@ -140,6 +140,7 @@ function tLogin(){const b=semAc(UI.busca);const us=S.users.filter(u=>!b||semAc(u
   <div style="display:flex;justify-content:space-between"><button class="linkbtn" data-act="atualizar">atualizar lista</button><button class="linkbtn" data-act="ir" data-v="config">configurar aparelho</button></div></div><div class="ver">versão ${VERSAO_APP}</div>`}
 function tInicio(){const c=criticos(),a=atencao();
   return hd("Almoxarifado")+`<div class="body">
+  ${S.pedN?`<div class="alerta" style="background:var(--limeL);border-color:var(--limeD)" data-act="peds"><div class="n" style="color:var(--dark)">${S.pedN}</div><div><b>📥 Pedido(s) para atender</b><br><span class="muted">toque para ver e dar baixa</span></div></div>`:""}
   ${c.length?`<div class="alerta" data-act="ir" data-v="criticos"><div class="n">${c.length}</div><div><b>Item(ns) crítico(s)</b><br><span class="muted">no estoque mínimo ou abaixo · toque para ver</span></div></div>`
     :a.length?`<div class="alerta am" data-act="ir" data-v="criticos"><div class="n">${a.length}</div><div><b>Item(ns) em atenção</b><br><span class="muted">perto do estoque mínimo</span></div></div>`:""}
   <div class="grid4">
@@ -150,7 +151,7 @@ function tInicio(){const c=criticos(),a=atencao();
   </div>
   ${S.lote&&S.lote.itens.length?`<div class="warn" data-act="ir" data-v="lote" style="cursor:pointer">Há um lançamento de <b>${esc(S.lote.tipo)}</b> não enviado (${S.lote.itens.length} item(ns)). Toque para continuar.</div>`:""}
   <div style="display:flex;gap:10px;margin-top:16px"><button class="btn sec sm" data-act="ultimos" style="flex:1">Últimos lançamentos</button><button class="btn sec sm" data-act="novo" data-v="Ajuste (+)" style="flex:1">Ajuste de inventário</button></div>
-  <button class="btn sec sm" data-act="cadLista" style="width:100%;margin-top:10px">📋 Cadastro de produtos</button>
+  <div style="display:flex;gap:10px;margin-top:10px"><button class="btn sec sm" data-act="peds" style="flex:1">📥 Pedidos${S.pedN?" ("+S.pedN+")":""}</button><button class="btn sec sm" data-act="cadLista" style="flex:1">📋 Cadastro de produtos</button></div>
   <div class="muted" style="margin-top:14px;text-align:center">Estoque atualizado ${S.cadEm?new Date(S.cadEm).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"—"} · <button class="linkbtn" data-act="atualizar">atualizar</button></div>
   </div><div class="ver">versão ${VERSAO_APP}</div>`}
 function tLote(){const L=S.lote;const T=TIPO_INFO[L.tipo];const aj=L.tipo.startsWith("Ajuste");
@@ -269,12 +270,53 @@ function listaJn(){const el=$("lj");if(!el)return;const ws=semAc(UI.bj||"").trim
   const L=S.itens.map(I).filter(i=>i.id!==UI.cadId&&ws.every(w=>semAc(i.p+" "+i.id+" "+i.end).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR")).slice(0,15);
   el.innerHTML=L.map(i=>`<div class="card" data-act="jnPara" data-v="${esc(i.id)}"><div class="l1"><div><div class="nm">${esc(i.p)}</div><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · "+esc(i.end):""}</div></div>${sdChip(i)}</div></div>`).join("")||`<div class="empty">Nenhum produto encontrado.</div>`}
 
+
+/* ===================== PEDIDOS (vindos do site do ADM) ===================== */
+const PST={Novo:"novo",Atendido:"entregue",Parcial:"entregue em parte",Recusado:"recusado",Cancelado:"cancelado"};
+const pstCls={Novo:"n-atencao",Atendido:"n-ok",Parcial:"n-critico",Recusado:"",Cancelado:""};
+const dHm=s=>s?s.slice(8,10)+"/"+s.slice(5,7)+" "+s.slice(11,16):"";
+function tPeds(){const L=UI.peds;
+  return hd("Pedidos","inicio")+`<div class="body">${!L?`<div class="empty">Carregando…</div>`:!L.length?`<div class="empty">Nenhum pedido ainda.</div>`:
+  L.map(p=>`<div class="card" ${p.st==="Novo"?`data-act="ped" data-v="${esc(p.id)}"`:'style="cursor:default;opacity:.8"'}><div class="l1"><div><div class="nm">${esc(p.nome)}${p.setor?` <span class="muted">· ${esc(p.setor)}</span>`:""}</div>
+   <div class="muted">${esc(p.id)} · ${dHm(p.em)} · ${p.itens.length} item(ns)${p.por?" · por "+esc(p.por):""}</div><div class="muted" style="margin-top:2px">${p.itens.slice(0,3).map(x=>nf(x.q)+" "+esc(x.p)).join(" · ")}${p.itens.length>3?" …":""}</div></div>
+   <span class="sd ${pstCls[p.st]||""}" style="${pstCls[p.st]?"":"background:#EEE"}">${PST[p.st]||p.st}</span></div></div>`).join("")}
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}<button class="linkbtn" data-act="peds">atualizar</button></div>`}
+function tPed(){const p=(UI.peds||[]).find(x=>x.id===UI.pid);if(!p)return tPeds();
+  return hd(p.id,"peds")+`<div class="body">
+  <div class="info"><b style="font-size:17px">${esc(p.nome)}</b>${p.setor?" · "+esc(p.setor):""}<br><span class="muted">pedido em ${dHm(p.em)}</span>${p.obs?`<br>Obs.: ${esc(p.obs)}`:""}</div>
+  <div class="lbl"><b>Quanto vai entregar</b> (0 = não entrega este)</div>
+  <div class="cart">${p.itens.map((x,k)=>{const it=item(x.id)||{saldo:0,un:x.un,end:"",nv:"ok"};const v=UI.pq[x.id];
+    return `<div class="ci"><div class="x"><div class="nm">${esc(x.p)}</div><div class="muted">pediu <b>${nf(x.q)}</b> ${esc(x.un)} · tem ${nf(it.saldo)}${it.end?" · <b>"+esc(it.end)+"</b>":""}</div>${it.saldo<x.q?`<div class="muted" style="color:#9A3D00">não tem tudo: entrega no máximo ${nf(Math.max(0,it.saldo))}</div>`:""}</div>
+    <div class="q"><button data-act="pqm" data-v="${esc(x.id)}">−</button><input class="pin2" data-id="${esc(x.id)}" type="number" inputmode="decimal" min="0" step="any" value="${esc(v)}" style="width:64px;height:38px;text-align:center;border:1px solid var(--bd);border-radius:8px;font-size:17px"><button data-act="pqp" data-v="${esc(x.id)}">+</button></div></div>`}).join("")}</div>
+  <div class="lbl">Recado para quem pediu (opcional na baixa, obrigatório ao recusar)</div><input class="in" id="presp" value="${esc(UI.presp||"")}" placeholder="ex.: retire no almoxarifado às 14h" autocomplete="off">
+  ${UI.erro?`<div class="err">${esc(UI.erro)}</div>`:""}</div>
+  <div class="foot"><button class="btn" data-act="atender" ${UI.enviando?"disabled":""}>${UI.enviando?"Lançando…":"Dar baixa · saída para "+esc(p.nome.split(" ")[0])}</button>
+  <button class="btn sec" style="margin-top:8px;min-height:44px;font-size:16px" data-act="recusar" ${UI.enviando?"disabled":""}>Recusar pedido</button></div>`}
+
 /* ===================== AÇÕES ===================== */
 function ler(){const L=S.lote;if(!L||UI.tela!=="lote")return;const g=id=>{const e=$(id);return e?e.value:null};
   if(g("pes")!==null)L.pessoa=g("pes");if(g("dt")!==null)L.data=g("dt");if(g("nf")!==null)L.nf=g("nf");if(g("obs")!==null)L.obs=g("obs");
   document.querySelectorAll(".qin").forEach(e=>{L.itens[+e.dataset.i].q=e.value});salvar()}
 function ir(t){ler();UI.erro="";if(t==="itens"||t==="saldo"){UI.busca="";UI.foco="bi";if(t==="saldo")UI.cat=""}UI.tela=t;render();window.scrollTo(0,0)}
 const AC={
+  peds:async()=>{UI.erro="";if(UI.tela!=="peds"){UI.peds=null;ir("peds")}try{UI.peds=(await api({a:"pedidos"})).pedidos;S.pedN=UI.peds.filter(p=>p.st==="Novo").length;salvar()}catch(e){UI.peds=UI.peds||[];UI.erro=e.message}if(UI.tela==="peds")render();baixar(false)},
+  ped:v=>{const p=UI.peds.find(x=>x.id===v);UI.pid=v;UI.presp="";UI.erro="";UI.pq={};p.itens.forEach(x=>{const it=item(x.id);UI.pq[x.id]=Math.max(0,Math.min(x.q,it?it.saldo:0))});ir("ped")},
+  pqm:v=>{UI.pq[v]=Math.max(0,(Number(UI.pq[v])||0)-1);render()},
+  pqp:v=>{UI.pq[v]=(Number(UI.pq[v])||0)+1;render()},
+  atender:async()=>{const p=UI.peds.find(x=>x.id===UI.pid);UI.presp=($("presp")||{}).value||"";UI.erro="";
+    const its=p.itens.map(x=>({id:x.id,qtd:Number(String(UI.pq[x.id]).replace(",","."))||0})).filter(x=>x.qtd>0);
+    if(!its.length){UI.erro="Nenhuma quantidade para entregar. Se não tem nada, use Recusar.";return render()}
+    UI.enviando=true;render();
+    try{const r=await api({a:"atender",pid:p.id,itens:its,resposta:UI.presp.trim(),uid:S.user.id,unome:S.user.nome,ap:S.cfg.dev});
+      Object.entries(r.saldos||{}).forEach(([k,v])=>{const row=S.itens.find(x=>x[0]===k);if(row){row[5]=v[0];row[7]=v[1]}});
+      S.pedN=Math.max(0,(S.pedN||1)-1);salvar();UI.enviando=false;
+      UI.res={tipo:"Saída",pessoa:p.nome+" · "+p.id+(r.status==="Parcial"?" (parcial)":""),ids:r.ids,repetido:r.repetido,alertas:r.alertas||[],itens:its.map(x=>({id:x.id,q:x.qtd}))};UI.tela="ok";render()}
+    catch(e){UI.enviando=false;UI.erro=e.message;render();if(/Saldo insuficiente/.test(e.message))baixar(false).then(render)}},
+  recusar:async()=>{UI.presp=($("presp")||{}).value||"";if(!UI.presp.trim()){UI.erro="Escreva no recado o motivo (quem pediu vai ver).";return render()}
+    if(!confirm("Recusar o pedido "+UI.pid+"?"))return;UI.enviando=true;render();
+    try{await api({a:"recusar",pid:UI.pid,resposta:UI.presp.trim(),uid:S.user.id,unome:S.user.nome,ap:S.cfg.dev});UI.enviando=false;toast("Pedido recusado. Quem pediu vê o recado.");AC.peds()}
+    catch(e){UI.enviando=false;UI.erro=e.message;render()}},
+
   jnApp:()=>{UI.jnPara="";UI.bj="";UI.jnMot="";UI.jnForcar=false;UI.erro="";UI.exOn=false;ir("cadJn");const b=$("bj");if(b)b.focus()},
   jnPara:v=>{UI.jnPara=v;UI.erro="";render()},
   jnTroca:()=>{UI.jnPara="";render();const b=$("bj");if(b)b.focus()},
@@ -352,7 +394,8 @@ document.addEventListener("input",e=>{const t=e.target;
   if(t.id==="bi"){UI.busca=t.value;lista()}
   if(t.id==="bl"){UI.bl=t.value;listaLote()}
   if(t.id==="bc"){UI.bc=t.value;listaCad()}
-  if(t.id==="bj"){UI.bj=t.value;listaJn()}if(t.id==="jnMot")UI.jnMot=t.value;
+  if(t.id==="bj"){UI.bj=t.value;listaJn()}
+  if(t.classList&&t.classList.contains("pin2"))UI.pq[t.dataset.id]=t.value;if(t.id==="presp")UI.presp=t.value;if(t.id==="jnMot")UI.jnMot=t.value;
   if(t.id&&t.id.startsWith("c_")){UI.cf[t.id.slice(2)]=t.value;if(t.id==="c_CatNova"){const e2=$("cprev");if(e2)e2.textContent=prevIdApp(t.value.trim().toUpperCase())}}
   if(t.id==="busca"){UI.busca=t.value;const p=t.selectionStart;render();const n=$("busca");if(n){n.focus();n.setSelectionRange(p,p)}}
   if(t.classList&&t.classList.contains("qin")){ler();S.lote.id="";const d=$("dp"+t.dataset.i);if(d){const v=Number(d.dataset.s)+Number(d.dataset.g)*(Number(String(t.value).replace(",","."))||0);d.textContent=nf(v);d.style.color=v<0?"var(--err)":"inherit"}}});
@@ -364,7 +407,7 @@ document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.id==="bl"){
   salvar();history.replaceState(null,"",location.pathname+location.search);window._instalado=true}catch(e){}})();
 render();
 if(online())baixar(false).then(ok=>{if(window._instalado)toast(ok?"Aparelho configurado. "+S.users.length+" estoquista(s).":"Não conectou. Verifique a internet.");if(["login","inicio","criticos"].includes(UI.tela))render()});
-setInterval(()=>{if(online()&&!document.hidden&&["inicio","login","criticos"].includes(UI.tela))baixar(false).then(()=>{if(["inicio","criticos"].includes(UI.tela))render()})},10*60000);
+setInterval(()=>{if(online()&&S.user&&!document.hidden&&["inicio","criticos","peds"].includes(UI.tela)){const antes=S.pedN||0;baixar(false).then(()=>{if((S.pedN||0)>antes)toast("📥 Chegou pedido novo!");if(UI.tela==="peds")AC.peds();else if(["inicio","criticos"].includes(UI.tela))render()})}},2*60000);
 </script>
 </body>
 </html>

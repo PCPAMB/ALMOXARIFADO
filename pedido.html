@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Almoxarifado – Pedir material</title>
+<script src="config.js"></script>
+<style>
+:root{--lime:#CDFF00;--limeD:#708C00;--limeL:#F3FFCC;--dark:#1C1E1A;--bg:#F5F6F2;--bd:#D6DAD0;--tx:#1C1E1A;--tx2:#686E64;--okL:#D6F0E0;--warn:#E6A800;--warnL:#FFF3CD;--err:#DC3545;--errL:#FFE4E6}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;color:var(--tx);background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+.hd{background:var(--dark);color:var(--lime);display:flex;align-items:center;gap:16px;padding:14px 26px;border-bottom:5px solid var(--lime);position:sticky;top:0;z-index:5}
+.hd .logo{height:26px}.hd h1{margin:0;font-size:21px;font-weight:600;flex:1}
+.hd .tb{display:flex;gap:6px}.hd .tb button{background:none;border:1px solid #555;color:#E8EBE3;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:14px}
+.hd .tb button.on{background:var(--lime);color:var(--dark);border-color:var(--lime);font-weight:600}
+.hd .tb .b{background:var(--err);color:#fff;border-radius:9px;padding:0 6px;font-size:12px;margin-left:4px}
+.main>*{min-width:0}html,body{overflow-x:hidden}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;padding:18px 26px 40px;max-width:1500px;margin:0 auto;align-items:start}
+@media(max-width:980px){.main{grid-template-columns:minmax(0,1fr);padding:12px}.side{position:static!important}.hd{padding:10px 14px;flex-wrap:wrap}.hd h1{font-size:17px}}
+.box{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:16px}
+.quem{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;margin-bottom:14px}
+.lbl{font-size:12.5px;color:var(--tx2);margin-bottom:3px;display:block}
+.in,.sel{width:100%;height:44px;border:1px solid var(--bd);border-radius:9px;background:#fff;padding:0 12px;font-size:15.5px}
+textarea.in{height:auto;min-height:60px;padding:9px 12px;resize:vertical}
+.in:focus{outline:none;border:2px solid var(--limeD)}
+.busca{height:50px;font-size:17px;border:2px solid var(--dark)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px}
+.chip{font-size:14px;padding:7px 13px;border-radius:16px;border:1px solid var(--bd);background:#fff;cursor:pointer}
+.chip.on{background:var(--dark);color:var(--lime);border-color:var(--dark)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.prod{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.prod.no{border:2px solid var(--limeD);background:var(--limeL)}
+.prod .nm{font-weight:700;font-size:15.5px;line-height:1.25;min-height:39px}
+.prod .mt{font-size:12.5px;color:var(--tx2)}
+.disp{font-size:13px;font-weight:600;padding:3px 10px;border-radius:10px;align-self:flex-start}
+.disp.ok{background:var(--okL)}.disp.pouco{background:var(--warnL);color:#7A5800}.disp.zero{background:#EEE;color:#777}
+.q{display:flex;gap:6px;align-items:center;margin-top:auto}
+.q button{width:38px;height:38px;border-radius:9px;border:1px solid var(--bd);background:var(--bg);font-size:20px;cursor:pointer}
+.q input{width:64px;height:38px;text-align:center;border:1px solid var(--bd);border-radius:9px;font-size:16px}
+.q .add{flex:1;width:auto;height:38px;border-radius:9px;border:0;background:var(--lime);font-weight:700;cursor:pointer;font-size:14px;white-space:nowrap;padding:0 8px}
+.q .add:disabled{background:#E5E7E1;color:#999;cursor:not-allowed}
+.side{position:sticky;top:90px}
+.side h2{margin:0 0 10px;font-size:18px;display:flex;align-items:center;gap:8px}
+.ci{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #EEF0EA}
+.ci .x{flex:1;min-width:0}.ci .nm{font-weight:600;font-size:14.5px}
+.rm{background:none;border:0;color:var(--err);font-size:20px;cursor:pointer}
+.btn{width:100%;height:52px;border-radius:12px;border:0;background:var(--lime);font-size:18px;font-weight:700;cursor:pointer;margin-top:12px}
+.btn:disabled{background:#E5E7E1;color:#999;cursor:not-allowed}
+.btn.sec{background:#fff;border:2px solid var(--dark);height:42px;font-size:15px}
+.muted{color:var(--tx2);font-size:13px}
+.err{background:var(--errL);border:1px solid var(--err);border-radius:9px;padding:9px 12px;margin-top:10px;font-size:14px}
+.warn{background:var(--warnL);border:1px solid var(--warn);border-radius:9px;padding:9px 12px;margin-top:10px;font-size:13.5px}
+.okb{background:var(--okL);border:2px solid #2E8B57;border-radius:12px;padding:14px;margin-bottom:14px}
+.ped{border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.ped .l1{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.st{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap}
+.st-Novo{background:var(--warnL);color:#7A5800}.st-Atendido{background:var(--okL);color:#1F6B3E}.st-Parcial{background:#FFE0CC;color:#9A3D00}.st-Recusado,.st-Cancelado{background:#EEE;color:#666}
+.empty{padding:26px;text-align:center;color:var(--tx2)}
+.fab{display:none}
+@media(max-width:980px){.fab{display:flex;position:fixed;left:10px;right:10px;bottom:10px;z-index:6;height:56px;border-radius:14px;border:0;background:var(--dark);color:var(--lime);font-size:17px;font-weight:700;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer}
+ .main{padding-bottom:90px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.prod{padding:10px}.prod .nm{font-size:14.5px;min-height:0}.q button{width:34px;height:36px}.q input{width:46px;height:36px}.add{font-size:13px}
+ .chips{flex-wrap:nowrap;overflow-x:auto}.chips label{display:none!important}.hd .tb button{padding:6px 10px;font-size:13px}}
+@media(max-width:420px){.grid{grid-template-columns:1fr}}
+.gate{max-width:460px;margin:12vh auto;background:#fff;border:1px solid var(--bd);border-radius:14px;padding:26px;text-align:center}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const KEY="almox_pedido_v1";
+const API=(window.ALMOX_API||"");
+let S={chave:"",nome:"",setor:"",carrinho:[],obs:"",meus:[],cid:""};
+try{Object.assign(S,JSON.parse(localStorage.getItem(KEY)||"{}"))}catch(e){}
+let U={itens:null,busca:"",cat:"",aba:"loja",q:{},erro:"",env:false,ok:"",peds:null,falta:false};
+const salvar=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nf=v=>(Number(v)||0).toLocaleString("pt-BR",{maximumFractionDigits:2});
+const semAc=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const dBR=s=>s?s.slice(8,10)+"/"+s.slice(5,7)+" "+s.slice(11,16):"";
+const ST={Novo:"Aguardando o almoxarifado",Atendido:"Entregue",Parcial:"Entregue em parte",Recusado:"Não atendido",Cancelado:"Cancelado"};
+(function(){const h=new URLSearchParams(location.hash.slice(1));const k=(h.get("chave")||"").trim();if(k){S.chave=k;salvar();history.replaceState(null,"",location.pathname)}})();
+async function api(b){const r=await fetch(API,{method:"POST",body:JSON.stringify(Object.assign({k:S.chave},b)),redirect:"follow"});const j=await r.json();if(!j.ok)throw new Error(j.erro||"Erro");return j}
+/* itens: [id, produto, categoria, unidade, disponível] */
+const I=r=>({id:r[0],p:r[1],cat:r[2],un:r[3],d:r[4]});
+const item=id=>{const r=(U.itens||[]).find(x=>x[0]===id);return r?I(r):null};
+async function carregar(){try{U.itens=(await api({a:"catalogo"})).itens;U.erro=""}catch(e){U.erro=/negado/i.test(e.message)?"Link inválido ou trocado. Peça o link novo ao almoxarifado.":"Sem conexão: "+e.message}render()}
+async function carregarMeus(){if(!S.meus.length){U.peds=[];return render()}try{U.peds=(await api({a:"meusPedidos",ids:S.meus})).pedidos}catch(e){U.peds=U.peds||[]}render()}
+function render(){
+  if(!S.chave)return $("app").innerHTML=`<div class="gate"><img src="logo.png" style="height:28px;filter:invert(1)" onerror="this.remove()"><h2>Pedir material</h2><p class="muted">Abra o link que o almoxarifado mandou. Ele já vem com o acesso.</p></div>`;
+  const novos=(U.peds||[]).filter(p=>p.st==="Novo").length;
+  $("app").innerHTML=`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Pedir material</h1>
+   <div class="tb"><button class="${U.aba==="loja"?"on":""}" data-act="aba" data-v="loja">Fazer pedido${S.carrinho.length?` <span class="b">${S.carrinho.length}</span>`:""}</button><button class="${U.aba==="meus"?"on":""}" data-act="aba" data-v="meus">Meus pedidos${novos?` <span class="b">${novos}</span>`:""}</button></div></div>
+  ${U.aba==="loja"?loja():meus()}`;
+  if(U.foco){const e=$(U.foco);if(e){e.focus();const v=e.value;e.value="";e.value=v}U.foco=""}
+}
+function loja(){
+  if(U.erro)return `<div class="main"><div class="err">${esc(U.erro)}</div></div>`;
+  if(!U.itens)return `<div class="main"><div class="muted">Carregando o estoque…</div></div>`;
+  const cats=[...new Set(U.itens.map(r=>r[2]))].sort();const ws=semAc(U.busca).trim().split(/\s+/).filter(Boolean);
+  let L=U.itens.map(I).filter(i=>(!U.cat||i.cat===U.cat)&&(U.falta||i.d>0)&&ws.every(w=>semAc(i.p+" "+i.id).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR"));
+  const tot=L.length;L=L.slice(0,120);const noC=S.carrinho.map(x=>x.id);
+  return `<div class="main"><div>
+   ${U.ok?`<div class="okb"><b style="font-size:17px">✓ Pedido ${esc(U.ok)} enviado.</b><br>O almoxarifado já recebeu. Acompanhe em <a href="#" data-act="aba" data-v="meus">Meus pedidos</a>.</div>`:""}
+   <input class="in busca" id="busca" placeholder="🔎 Procure o material (ex.: papel, caneta, luva, sabão…)" value="${esc(U.busca)}" autocomplete="off">
+   <div class="chips"><span class="chip ${U.cat?"":"on"}" data-act="cat" data-v="">Todos</span>${cats.map(c=>`<span class="chip ${U.cat===c?"on":""}" data-act="cat" data-v="${esc(c)}">${esc(c.replace("INSUMOS/PRODUCAO","INSUMOS"))}</span>`).join("")}
+   <label class="muted" style="display:flex;align-items:center;gap:6px;margin-left:auto"><input type="checkbox" id="falta" ${U.falta?"checked":""}> mostrar itens em falta</label></div>
+   <div class="grid">${L.map(i=>{const q=U.q[i.id]??1;const cls=i.d<=0?"zero":i.d<=5?"pouco":"ok";
+     return `<div class="prod ${noC.includes(i.id)?"no":""}"><div class="nm">${esc(i.p)}</div><div class="mt">${esc(i.cat)} · ${esc(i.id)}</div>
+      <span class="disp ${cls}">${i.d>0?"Disponível: "+nf(i.d)+" "+esc(i.un):"Em falta"}</span>
+      <div class="q"><button data-act="qm" data-v="${esc(i.id)}">−</button><input id="q_${esc(i.id)}" data-id="${esc(i.id)}" class="qin" type="number" min="1" step="1" value="${esc(q)}" ${i.d<=0?"disabled":""}><button data-act="qp" data-v="${esc(i.id)}">+</button>
+      <button class="add" data-act="add" data-v="${esc(i.id)}" ${i.d<=0?"disabled":""}>${noC.includes(i.id)?"✓ no pedido":"Adicionar"}</button></div></div>`}).join("")}</div>
+   ${!L.length?`<div class="empty">Nenhum material encontrado${U.busca?" com “"+esc(U.busca)+"”":""}.</div>`:""}
+   ${tot>120?`<div class="muted" style="margin-top:10px">Mostrando 120 de ${tot}. Digite mais para filtrar.</div>`:""}
+  </div>${lado()}</div>${S.carrinho.length?`<button class="fab" data-act="verCarrinho">🧺 Ver meu pedido (${S.carrinho.length}) · enviar ›</button>`:""}`}
+function lado(){const C=S.carrinho;
+  return `<div class="side box"><h2>🧺 Meu pedido <span class="muted">(${C.length} ${C.length===1?"item":"itens"})</span></h2>
+  <div class="quem" style="grid-template-columns:1fr"><div><span class="lbl">Seu nome *</span><input class="in" id="nome" value="${esc(S.nome)}" placeholder="nome e sobrenome" autocomplete="name"></div>
+  <div><span class="lbl">Setor</span><input class="in" id="setor" value="${esc(S.setor)}" placeholder="ex.: Administrativo, RH, Produção"></div></div>
+  ${C.length?C.map((x,k)=>{const it=item(x.id)||{p:x.id,un:"",d:0};return `<div class="ci"><div class="x"><div class="nm">${esc(it.p)}</div><div class="muted">${nf(x.q)} ${esc(it.un)}${x.q>it.d?` · <b style="color:#9A3D00">só há ${nf(it.d)}</b>`:""}</div></div>
+    <div class="q" style="margin:0"><button data-act="cm" data-v="${k}">−</button><button data-act="cp" data-v="${k}">+</button></div><button class="rm" data-act="rm" data-v="${k}" title="tirar">×</button></div>`}).join("")
+   :`<div class="empty" style="padding:16px">Escolha os materiais ao lado e clique em <b>Adicionar</b>.</div>`}
+  <span class="lbl" style="margin-top:12px">Observação (opcional)</span><textarea class="in" id="obs" placeholder="ex.: para a reunião de sexta">${esc(S.obs)}</textarea>
+  ${U.erro2?`<div class="err">${esc(U.erro2)}</div>`:""}
+  <button class="btn" data-act="enviar" ${C.length&&!U.env?"":"disabled"}>${U.env?"Enviando…":"Enviar pedido"}</button>
+  <div class="muted" style="margin-top:8px">O almoxarifado confere e separa. A saída sai no seu nome quando o material for entregue.</div></div>`}
+function meus(){const P=U.peds;
+  return `<div class="main" style="grid-template-columns:1fr;max-width:900px"><div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h2 style="margin:0;font-size:19px;flex:1">Meus pedidos</h2><button class="btn sec" style="width:auto;margin:0;padding:0 16px" data-act="recarregarMeus">Atualizar</button></div>
+  ${P===null?`<div class="muted">Carregando…</div>`:!P.length?`<div class="empty">Você ainda não fez pedidos neste computador.</div>`:P.map(p=>`<div class="ped"><div class="l1"><div><b style="font-size:16px">${esc(p.id)}</b> <span class="muted">· ${dBR(p.em)} · ${esc(p.nome)}${p.setor?" · "+esc(p.setor):""}</span></div><span class="st st-${p.st}">${ST[p.st]||p.st}</span></div>
+   <ul style="margin:8px 0 4px;padding-left:20px;font-size:14.5px">${p.itens.map(x=>{const e=p.ent[x.id];return `<li>${nf(x.q)} ${esc(x.un)} ${esc(x.p)}${p.st==="Atendido"||p.st==="Parcial"?` → <b style="color:${(e||0)>=x.q?"#1F6B3E":"#9A3D00"}">entregue ${nf(e||0)}</b>`:""}</li>`}).join("")}</ul>
+   ${p.resp?`<div class="muted"><b>Almoxarifado:</b> ${esc(p.resp)}</div>`:""}${p.por?`<div class="muted">Atendido por ${esc(p.por)} em ${dBR(p.at)}</div>`:""}
+   ${p.st==="Novo"?`<button class="btn sec" style="width:auto;padding:0 14px;height:34px;font-size:13.5px;margin-top:8px" data-act="cancelar" data-v="${esc(p.id)}">Cancelar pedido</button>`:""}</div>`).join("")}</div></div>`}
+const AC={
+  verCarrinho:()=>{const b=document.querySelector(".side");if(b)b.scrollIntoView({behavior:"smooth",block:"start"});setTimeout(()=>{const n=$("nome");if(n&&!n.value)n.focus()},400)},
+  aba:v=>{U.aba=v;U.ok="";render();if(v==="meus")carregarMeus()},
+  cat:v=>{U.cat=v;render()},
+  qm:v=>{U.q[v]=Math.max(1,(Number(U.q[v]??1)||1)-1);render()},
+  qp:v=>{const it=item(v);U.q[v]=Math.min(it?Math.max(1,it.d):999,(Number(U.q[v]??1)||1)+1);render()},
+  add:v=>{const q=Math.max(1,Number(U.q[v]??1)||1);const c=S.carrinho.find(x=>x.id===v);if(c)c.q=q;else S.carrinho.push({id:v,q});U.ok="";S.cid="";salvar();render()},
+  cm:v=>{const x=S.carrinho[+v];x.q=Math.max(1,x.q-1);S.cid="";salvar();render()},
+  cp:v=>{S.carrinho[+v].q++;S.cid="";salvar();render()},
+  rm:v=>{S.carrinho.splice(+v,1);S.cid="";salvar();render()},
+  enviar:async()=>{U.erro2="";S.nome=($("nome").value||"").trim();S.setor=($("setor").value||"").trim();S.obs=$("obs").value||"";salvar();
+    if(S.nome.length<3){U.erro2="Escreva seu nome (nome e sobrenome) para o almoxarifado saber de quem é.";return render()}
+    if(!S.cid)S.cid="W"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);salvar();
+    U.env=true;render();
+    try{const r=await api({a:"pedir",id:S.cid,nome:S.nome,setor:S.setor,obs:S.obs.trim(),itens:S.carrinho.map(x=>({id:x.id,qtd:x.q}))});
+      if(!S.meus.includes(r.id))S.meus.push(r.id);S.meus=S.meus.slice(-30);S.carrinho=[];S.obs="";S.cid="";salvar();U.env=false;U.ok=r.id;U.q={};render();window.scrollTo(0,0);carregarMeus()}
+    catch(e){U.env=false;U.erro2=e.message;render()}},
+  recarregarMeus:()=>{U.peds=null;render();carregarMeus()},
+  cancelar:async v=>{if(!confirm("Cancelar o pedido "+v+"?"))return;try{await api({a:"cancelarPedido",pid:v})}catch(e){alert(e.message)}carregarMeus()}
+};
+document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const f=AC[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v)}});
+document.addEventListener("input",e=>{const t=e.target;
+  if(t.id==="busca"){U.busca=t.value;U.foco="busca";render()}
+  if(t.classList.contains("qin"))U.q[t.dataset.id]=t.value;
+  if(t.id==="nome"){S.nome=t.value;salvar()}if(t.id==="setor"){S.setor=t.value;salvar()}if(t.id==="obs"){S.obs=t.value;salvar()}});
+document.addEventListener("change",e=>{if(e.target.id==="falta"){U.falta=e.target.checked;render()}});
+render();if(S.chave){carregar();carregarMeus()}
+setInterval(()=>{if(S.chave&&!document.hidden){if(U.aba==="meus")carregarMeus();else carregar()}},90000);
+</script>
+</body>
+</html>
