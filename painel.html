@@ -97,7 +97,7 @@ async function carregar(){try{const j=await api({a:"painel",de:P.de,ate:P.ate});
 const sd=i=>`<span class="sd n-${i.nv}">${NIV[i.nv]}</span>`;
 function render(){
   if(!P.senha)return $("app").innerHTML=`<div class="gate"><img src="logo.png" alt="" style="height:26px;filter:invert(1)" onerror="this.remove()"><h2>Painel do estoque</h2>
-    <input class="in" id="quem" placeholder="Seu nome" value="${esc(P.quem)}" autocomplete="name"><input class="in" id="senha" type="password" placeholder="Senha do painel ou de gestão" autocomplete="current-password">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}<button class="btn" data-act="entrar">Entrar</button></div>`;
+    <input class="in" id="quem" placeholder="Seu nome" value="${esc(P.quem)}" autocomplete="name"><input class="in" id="senha" type="password" placeholder="Senha do painel" autocomplete="current-password">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}<button class="btn" data-act="entrar">Entrar</button></div>`;
   if(!P.d)return $("app").innerHTML=hd()+`<div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:`<p class="muted">Carregando…</p>`}</div>`;
   const it=P.d.itens.map(I).filter(i=>i.ativo);const crit=it.filter(i=>["critico","zerado","negativo"].includes(i.nv));
   const tabs=[["criticos","Críticos",crit.length],["estoque","Estoque"],["movimentos","Movimentos"],["consumo","Consumo"]];if(P.d.gestao)tabs.push(["cadastro","Cadastro"]);if(P.tab==="cadastro"&&!P.d.gestao)P.tab="criticos";
@@ -157,7 +157,7 @@ function vCons(){const L=P.d.movs.map(M).filter(m=>m.t==="Saída"&&m.st!=="Estor
   <div class="bar"><input class="in" id="fpes" list="dlp" placeholder="Digite o nome" value="${esc(pes)}" style="min-width:300px"><datalist id="dlp">${nomes.map(n=>`<option value="${esc(n)}">`).join("")}</datalist><span class="muted">no período escolhido</span></div>
   ${pes?tabela("ficha",[{h:"Data",v:m=>m.d,f:m=>dBR(m.d)},{h:"Item",v:m=>m.p},{h:"Categoria",v:m=>m.cat},{h:"Qtd",n:1,v:m=>m.q,f:m=>nf(m.q)+" "+esc(m.un)},{h:"Estoquista",v:m=>m.est}],ficha.slice().reverse()):""}</div>`}
 
-/* ===================== CADASTRO (só com a senha de gestão) ===================== */
+/* ===================== CADASTRO (liberado com a senha do painel) ===================== */
 const CEL=()=>window.innerWidth<700;
 const UNID=["UNID","PAR","PCTS","CX","RL","KIT","FR","KG","L","M"];
 function catsAll(){return [...new Set(P.d.itens.map(r=>r[2]))].sort()}
