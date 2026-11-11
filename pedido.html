@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Almoxarifado – Pedir material</title>
+<title>Almoxarifado – Pedir material (v1.7)</title>
 <script src="config.js"></script>
 <style>
 :root{--lime:#CDFF00;--limeD:#708C00;--limeL:#F3FFCC;--dark:#1C1E1A;--bg:#F5F6F2;--bd:#D6DAD0;--tx:#1C1E1A;--tx2:#686E64;--okL:#D6F0E0;--warn:#E6A800;--warnL:#FFF3CD;--err:#DC3545;--errL:#FFE4E6}
@@ -34,7 +34,7 @@ textarea.in{height:auto;min-height:60px;padding:9px 12px;resize:vertical}
 .prod.no{border:2px solid var(--limeD);background:var(--limeL)}
 .prod .nm{font-weight:700;font-size:15.5px;line-height:1.25;min-height:39px}
 .prod .mt{font-size:12.5px;color:var(--tx2)}
-.disp{font-size:13px;font-weight:600;padding:3px 10px;border-radius:10px;align-self:flex-start}
+.disp{font-size:13px;font-weight:600;padding:3px 10px;border-radius:10px;align-self:flex-start;white-space:nowrap;display:inline-block}
 .disp.ok{background:var(--okL)}.disp.pouco{background:var(--warnL);color:#7A5800}.disp.zero{background:#EEE;color:#777}
 .q{display:flex;gap:6px;align-items:center;margin-top:auto}
 .q button{width:38px;height:38px;border-radius:9px;border:1px solid var(--bd);background:var(--bg);font-size:20px;cursor:pointer}
@@ -57,6 +57,17 @@ textarea.in{height:auto;min-height:60px;padding:9px 12px;resize:vertical}
 .ped .l1{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .st{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:10px;white-space:nowrap}
 .st-Novo{background:var(--warnL);color:#7A5800}.st-Atendido{background:var(--okL);color:#1F6B3E}.st-Parcial{background:#FFE0CC;color:#9A3D00}.st-Recusado,.st-Cancelado{background:#EEE;color:#666}
+.lista{background:#fff;border:1px solid var(--bd);border-radius:14px;overflow:hidden}
+.lh,.lr{display:grid;grid-template-columns:minmax(0,1fr) 180px 300px;gap:12px;align-items:center;padding:10px 14px}
+.lh{background:#F0F2EC;font-size:12px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.04em}
+.lr{border-top:1px solid #EEF0EA}.lr:hover{background:#FAFBF7}.lr.no{background:var(--limeL)}
+.lr .nm{font-weight:600;font-size:15px;line-height:1.3}.lr .mt{font-size:12.5px;color:var(--tx2)}
+.lr .q{margin:0}
+.ve .lh,.ve .lr{grid-template-columns:minmax(0,1fr) 150px 120px 150px}
+.ve .num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.resumo{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}.resumo div{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:10px 14px;font-size:13px;color:var(--tx2)}.resumo b{display:block;font-size:20px;color:var(--tx)}
+@media(max-width:980px){.lh{display:none}.lr{grid-template-columns:minmax(0,1fr) auto;gap:8px 10px;padding:10px 12px}.lr .q{grid-column:1/-1}
+ .ve .lr{grid-template-columns:minmax(0,1fr) auto}.ve .lr .cat{display:none}.ve .lr .cod{display:none}}
 .empty{padding:26px;text-align:center;color:var(--tx2)}
 .fab{display:none}
 @media(max-width:980px){.fab{display:flex;position:fixed;left:10px;right:10px;bottom:10px;z-index:6;height:56px;border-radius:14px;border:0;background:var(--dark);color:var(--lime);font-size:17px;font-weight:700;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer}
@@ -91,27 +102,46 @@ async function carregarMeus(){if(!S.meus.length){U.peds=[];return render()}try{U
 function render(){
   if(!S.chave)return $("app").innerHTML=`<div class="gate"><img src="logo.png" style="height:28px;filter:invert(1)" onerror="this.remove()"><h2>Pedir material</h2><p class="muted">Abra o link que o almoxarifado mandou. Ele já vem com o acesso.</p></div>`;
   const novos=(U.peds||[]).filter(p=>p.st==="Novo").length;
-  $("app").innerHTML=`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Pedir material</h1>
-   <div class="tb"><button class="${U.aba==="loja"?"on":""}" data-act="aba" data-v="loja">Fazer pedido${S.carrinho.length?` <span class="b">${S.carrinho.length}</span>`:""}</button><button class="${U.aba==="meus"?"on":""}" data-act="aba" data-v="meus">Meus pedidos${novos?` <span class="b">${novos}</span>`:""}</button></div></div>
-  ${U.aba==="loja"?loja():meus()}`;
+  $("app").innerHTML=`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Pedir material <span style="font-size:11px;color:#9EA19A;font-weight:400">v1.7 lista</span></h1>
+   <div class="tb"><button class="${U.aba==="loja"?"on":""}" data-act="aba" data-v="loja">Fazer pedido${S.carrinho.length?` <span class="b">${S.carrinho.length}</span>`:""}</button><button class="${U.aba==="estoque"?"on":""}" data-act="aba" data-v="estoque">Ver estoque</button><button class="${U.aba==="meus"?"on":""}" data-act="aba" data-v="meus">Meus pedidos${novos?` <span class="b">${novos}</span>`:""}</button></div></div>
+  ${U.aba==="loja"?loja():U.aba==="estoque"?estoque():meus()}`;
   if(U.foco){const e=$(U.foco);if(e){e.focus();const v=e.value;e.value="";e.value=v}U.foco=""}
 }
+function filtrar(){const ws=semAc(U.busca).trim().split(/\s+/).filter(Boolean);
+  return U.itens.map(I).filter(i=>(!U.cat||i.cat===U.cat)&&(U.falta||i.d>0)&&ws.every(w=>semAc(i.p+" "+i.id).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR"))}
+function filtros(ph){const cats=[...new Set(U.itens.map(r=>r[2]))].sort();
+  return `<input class="in busca" id="busca" placeholder="${ph}" value="${esc(U.busca)}" autocomplete="off">
+   <div class="chips"><span class="chip ${U.cat?"":"on"}" data-act="cat" data-v="">Todos</span>${cats.map(c=>`<span class="chip ${U.cat===c?"on":""}" data-act="cat" data-v="${esc(c)}">${esc(c.replace("INSUMOS/PRODUCAO","INSUMOS"))}</span>`).join("")}
+   <label class="muted" style="display:flex;align-items:center;gap:6px;margin-left:auto"><input type="checkbox" id="falta" ${U.falta?"checked":""}> mostrar itens em falta</label></div>`}
+const cDisp=i=>i.d<=0?"zero":i.d<=5?"pouco":"ok";
+/* aba só para consultar o que tem no estoque */
+function estoque(){
+  if(U.erro)return `<div class="main" style="grid-template-columns:1fr"><div class="err">${esc(U.erro)}</div></div>`;
+  if(!U.itens)return `<div class="main" style="grid-template-columns:1fr"><div class="muted">Carregando o estoque…</div></div>`;
+  const all=U.itens.map(I);const L=filtrar();const tot=L.length;const V=L.slice(0,400);
+  return `<div class="main" style="grid-template-columns:1fr;max-width:1100px"><div>
+   <div class="resumo"><div><b>${all.filter(i=>i.d>0).length}</b>itens com estoque</div><div><b>${all.filter(i=>i.d<=0).length}</b>itens em falta</div><div><b>${[...new Set(all.map(i=>i.cat))].length}</b>categorias</div></div>
+   ${filtros("🔎 Procure no estoque (ex.: papel, luva, bota 40…)")}
+   ${V.length?`<div class="lista ve"><div class="lh"><span>Produto</span><span class="cat">Categoria</span><span class="cod">Código</span><span class="num">Disponível</span></div>
+    ${V.map(i=>`<div class="lr"><div><div class="nm">${esc(i.p)}</div></div><span class="mt cat">${esc(i.cat.replace("INSUMOS/PRODUCAO","INSUMOS"))}</span><span class="mt cod">${esc(i.id)}</span>
+     <span class="num"><span class="disp ${cDisp(i)}">${i.d>0?nf(i.d)+" "+esc(i.un):"Em falta"}</span></span></div>`).join("")}</div>`
+    :`<div class="empty">Nenhum material encontrado${U.busca?" com “"+esc(U.busca)+"”":""}.</div>`}
+   ${tot>400?`<div class="muted" style="margin-top:10px">Mostrando 400 de ${tot}. Digite para filtrar.</div>`:""}
+   <div class="muted" style="margin-top:10px">Só consulta. Para pedir, use a aba <a href="#" data-act="aba" data-v="loja">Fazer pedido</a>. Os saldos se atualizam sozinhos a cada minuto e meio.</div>
+  </div></div>`}
 function loja(){
   if(U.erro)return `<div class="main"><div class="err">${esc(U.erro)}</div></div>`;
   if(!U.itens)return `<div class="main"><div class="muted">Carregando o estoque…</div></div>`;
-  const cats=[...new Set(U.itens.map(r=>r[2]))].sort();const ws=semAc(U.busca).trim().split(/\s+/).filter(Boolean);
-  let L=U.itens.map(I).filter(i=>(!U.cat||i.cat===U.cat)&&(U.falta||i.d>0)&&ws.every(w=>semAc(i.p+" "+i.id).includes(w))).sort((a,b)=>a.p.localeCompare(b.p,"pt-BR"));
+  let L=filtrar();
   const tot=L.length;L=L.slice(0,120);const noC=S.carrinho.map(x=>x.id);
   return `<div class="main"><div>
    ${U.ok?`<div class="okb"><b style="font-size:17px">✓ Pedido ${esc(U.ok)} enviado.</b><br>O almoxarifado já recebeu. Acompanhe em <a href="#" data-act="aba" data-v="meus">Meus pedidos</a>.</div>`:""}
-   <input class="in busca" id="busca" placeholder="🔎 Procure o material (ex.: papel, caneta, luva, sabão…)" value="${esc(U.busca)}" autocomplete="off">
-   <div class="chips"><span class="chip ${U.cat?"":"on"}" data-act="cat" data-v="">Todos</span>${cats.map(c=>`<span class="chip ${U.cat===c?"on":""}" data-act="cat" data-v="${esc(c)}">${esc(c.replace("INSUMOS/PRODUCAO","INSUMOS"))}</span>`).join("")}
-   <label class="muted" style="display:flex;align-items:center;gap:6px;margin-left:auto"><input type="checkbox" id="falta" ${U.falta?"checked":""}> mostrar itens em falta</label></div>
-   <div class="grid">${L.map(i=>{const q=U.q[i.id]??1;const cls=i.d<=0?"zero":i.d<=5?"pouco":"ok";
-     return `<div class="prod ${noC.includes(i.id)?"no":""}"><div class="nm">${esc(i.p)}</div><div class="mt">${esc(i.cat)} · ${esc(i.id)}</div>
-      <span class="disp ${cls}">${i.d>0?"Disponível: "+nf(i.d)+" "+esc(i.un):"Em falta"}</span>
-      <div class="q"><button data-act="qm" data-v="${esc(i.id)}">−</button><input id="q_${esc(i.id)}" data-id="${esc(i.id)}" class="qin" type="number" min="1" step="1" value="${esc(q)}" ${i.d<=0?"disabled":""}><button data-act="qp" data-v="${esc(i.id)}">+</button>
-      <button class="add" data-act="add" data-v="${esc(i.id)}" ${i.d<=0?"disabled":""}>${noC.includes(i.id)?"✓ no pedido":"Adicionar"}</button></div></div>`}).join("")}</div>
+   ${filtros("🔎 Procure o material (ex.: papel, caneta, luva, sabão…)")}
+   ${L.length?`<div class="lista"><div class="lh"><span>Produto</span><span>Disponível</span><span>Quantidade</span></div>${L.map(i=>{const q=U.q[i.id]??1;const no=noC.includes(i.id);
+     return `<div class="lr ${no?"no":""}"><div><div class="nm">${esc(i.p)}</div><div class="mt">${esc(i.cat.replace("INSUMOS/PRODUCAO","INSUMOS"))} · ${esc(i.id)}</div></div>
+      <span><span class="disp ${cDisp(i)}">${i.d>0?"Disponível: "+nf(i.d)+" "+esc(i.un):"Em falta"}</span></span>
+      <div class="q"><button data-act="qm" data-v="${esc(i.id)}" aria-label="menos">−</button><input id="q_${esc(i.id)}" data-id="${esc(i.id)}" class="qin" type="number" min="1" step="1" value="${esc(q)}" ${i.d<=0?"disabled":""} aria-label="quantidade"><button data-act="qp" data-v="${esc(i.id)}" aria-label="mais">+</button>
+      <button class="add" data-act="add" data-v="${esc(i.id)}" ${i.d<=0?"disabled":""}>${no?"✓ no pedido":"Adicionar"}</button></div></div>`}).join("")}</div>`:""}
    ${!L.length?`<div class="empty">Nenhum material encontrado${U.busca?" com “"+esc(U.busca)+"”":""}.</div>`:""}
    ${tot>120?`<div class="muted" style="margin-top:10px">Mostrando 120 de ${tot}. Digite mais para filtrar.</div>`:""}
   </div>${lado()}</div>${S.carrinho.length?`<button class="fab" data-act="verCarrinho">🧺 Ver meu pedido (${S.carrinho.length}) · enviar ›</button>`:""}`}
