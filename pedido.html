@@ -106,7 +106,9 @@ function errBox(){if(U.erro!=="NEGADO")return `<div class="main" style="grid-tem
 async function carregar(){try{U.itens=(await api({a:"catalogo"})).itens;U.erro=""}catch(e){U.erro=/negado/i.test(e.message)?"NEGADO":"Sem conexão: "+e.message}render()}
 async function carregarMeus(){if(!S.meus.length){U.peds=[];return render()}try{U.peds=(await api({a:"meusPedidos",ids:S.meus})).pedidos}catch(e){U.peds=U.peds||[]}render()}
 function render(){
-  if(!S.chave)return $("app").innerHTML=`<div class="gate"><img src="logo.png" style="height:28px;filter:invert(1)" onerror="this.remove()"><h2>Pedir material</h2><p class="muted">Abra o link que o almoxarifado mandou. Ele já vem com o acesso.</p></div>`;
+  if(!S.chave)return $("app").innerHTML=`<div class="gate"><img src="logo.png" style="height:28px;filter:invert(1)" onerror="this.remove()"><h2>Pedir material</h2><p class="muted">Abra o link que o almoxarifado mandou (ele termina com <b>#chave=…</b>) ou cole o link aqui:</p>
+   <input class="in" id="lk" placeholder="https://pcpamb.github.io/ALMOXARIFADO/pedido.html#chave=..." autocomplete="off" style="width:100%;margin-top:6px">
+   <button class="btn" data-act="colarLink" style="margin-top:10px;width:100%">Entrar</button></div>`;
   const novos=(U.peds||[]).filter(p=>p.st==="Novo").length;
   $("app").innerHTML=`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Pedir material <span style="font-size:11px;color:#9EA19A;font-weight:400">v1.7.1</span></h1>
    <div class="tb"><button class="${U.aba==="loja"?"on":""}" data-act="aba" data-v="loja">Fazer pedido${S.carrinho.length?` <span class="b">${S.carrinho.length}</span>`:""}</button><button class="${U.aba==="estoque"?"on":""}" data-act="aba" data-v="estoque">Ver estoque</button><button class="${U.aba==="meus"?"on":""}" data-act="aba" data-v="meus">Meus pedidos${novos?` <span class="b">${novos}</span>`:""}</button></div></div>
