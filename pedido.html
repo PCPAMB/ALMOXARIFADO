@@ -97,12 +97,18 @@ async function api(b){const r=await fetch(API,{method:"POST",body:JSON.stringify
 /* itens: [id, produto, categoria, unidade, disponível] */
 const I=r=>({id:r[0],p:r[1],cat:r[2],un:r[3],d:r[4]});
 const item=id=>{const r=(U.itens||[]).find(x=>x[0]===id);return r?I(r):null};
-async function carregar(){try{U.itens=(await api({a:"catalogo"})).itens;U.erro=""}catch(e){U.erro=/negado/i.test(e.message)?"Link inválido ou trocado. Peça o link novo ao almoxarifado.":"Sem conexão: "+e.message}render()}
+function errBox(){if(U.erro!=="NEGADO")return `<div class="main" style="grid-template-columns:1fr"><div class="err">${esc(U.erro)}</div></div>`;
+  return `<div class="main" style="grid-template-columns:1fr;max-width:720px"><div class="box" style="padding:22px">
+   <div class="err" style="margin-bottom:14px">O acesso guardado neste navegador não vale mais (link antigo, incompleto ou trocado).</div>
+   <b>Cole aqui o link que o almoxarifado mandou</b><div class="muted" style="margin:4px 0 10px">É o link inteiro, que termina com <b>#chave=…</b></div>
+   <input class="in" id="lk" placeholder="https://pcpamb.github.io/ALMOXARIFADO/pedido.html#chave=..." autocomplete="off" style="width:100%">
+   <button class="btn" data-act="colarLink" style="margin-top:10px">Entrar</button></div></div>`}
+async function carregar(){try{U.itens=(await api({a:"catalogo"})).itens;U.erro=""}catch(e){U.erro=/negado/i.test(e.message)?"NEGADO":"Sem conexão: "+e.message}render()}
 async function carregarMeus(){if(!S.meus.length){U.peds=[];return render()}try{U.peds=(await api({a:"meusPedidos",ids:S.meus})).pedidos}catch(e){U.peds=U.peds||[]}render()}
 function render(){
   if(!S.chave)return $("app").innerHTML=`<div class="gate"><img src="logo.png" style="height:28px;filter:invert(1)" onerror="this.remove()"><h2>Pedir material</h2><p class="muted">Abra o link que o almoxarifado mandou. Ele já vem com o acesso.</p></div>`;
   const novos=(U.peds||[]).filter(p=>p.st==="Novo").length;
-  $("app").innerHTML=`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Pedir material <span style="font-size:11px;color:#9EA19A;font-weight:400">v1.7 lista</span></h1>
+  $("app").innerHTML=`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Pedir material <span style="font-size:11px;color:#9EA19A;font-weight:400">v1.7.1</span></h1>
    <div class="tb"><button class="${U.aba==="loja"?"on":""}" data-act="aba" data-v="loja">Fazer pedido${S.carrinho.length?` <span class="b">${S.carrinho.length}</span>`:""}</button><button class="${U.aba==="estoque"?"on":""}" data-act="aba" data-v="estoque">Ver estoque</button><button class="${U.aba==="meus"?"on":""}" data-act="aba" data-v="meus">Meus pedidos${novos?` <span class="b">${novos}</span>`:""}</button></div></div>
   ${U.aba==="loja"?loja():U.aba==="estoque"?estoque():meus()}`;
   if(U.foco){const e=$(U.foco);if(e){e.focus();const v=e.value;e.value="";e.value=v}U.foco=""}
@@ -116,7 +122,7 @@ function filtros(ph){const cats=[...new Set(U.itens.map(r=>r[2]))].sort();
 const cDisp=i=>i.d<=0?"zero":i.d<=5?"pouco":"ok";
 /* aba só para consultar o que tem no estoque */
 function estoque(){
-  if(U.erro)return `<div class="main" style="grid-template-columns:1fr"><div class="err">${esc(U.erro)}</div></div>`;
+  if(U.erro)return errBox();
   if(!U.itens)return `<div class="main" style="grid-template-columns:1fr"><div class="muted">Carregando o estoque…</div></div>`;
   const all=U.itens.map(I);const L=filtrar();const tot=L.length;const V=L.slice(0,400);
   return `<div class="main" style="grid-template-columns:1fr;max-width:1100px"><div>
@@ -130,7 +136,7 @@ function estoque(){
    <div class="muted" style="margin-top:10px">Só consulta. Para pedir, use a aba <a href="#" data-act="aba" data-v="loja">Fazer pedido</a>. Os saldos se atualizam sozinhos a cada minuto e meio.</div>
   </div></div>`}
 function loja(){
-  if(U.erro)return `<div class="main"><div class="err">${esc(U.erro)}</div></div>`;
+  if(U.erro)return errBox();
   if(!U.itens)return `<div class="main"><div class="muted">Carregando o estoque…</div></div>`;
   let L=filtrar();
   const tot=L.length;L=L.slice(0,120);const noC=S.carrinho.map(x=>x.id);
@@ -173,6 +179,7 @@ const AC={
   cm:v=>{const x=S.carrinho[+v];x.q=Math.max(1,x.q-1);S.cid="";salvar();render()},
   cp:v=>{S.carrinho[+v].q++;S.cid="";salvar();render()},
   rm:v=>{S.carrinho.splice(+v,1);S.cid="";salvar();render()},
+  colarLink:()=>{const v=($("lk").value||"").trim();const m=v.match(/chave=([^&\s]+)/);const k=(m?m[1]:v).trim();if(!k)return;S.chave=k;salvar();U.erro="";U.itens=null;render();carregar()},
   enviar:async()=>{U.erro2="";S.nome=($("nome").value||"").trim();S.setor=($("setor").value||"").trim();S.obs=$("obs").value||"";salvar();
     if(S.nome.length<3){U.erro2="Escreva seu nome (nome e sobrenome) para o almoxarifado saber de quem é.";return render()}
     if(!S.cid)S.cid="W"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);salvar();
