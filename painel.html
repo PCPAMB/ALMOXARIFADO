@@ -337,12 +337,13 @@ const XL={
 };
 /* ===================== SUGESTÃO DE COMPRAS + REQUISIÇÃO BC.FO.65 ===================== */
 const CPK="almox_compras_v1",CPJ="almox_compras_pedido_v1";
-P.cp=Object.assign({cat:"",durar:30,prazo:10,base:"maior",modo:"repor",todos:false,dept:"PRODUÇÃO",crit:"auto",setor:"Almoxarifado"},(()=>{try{return JSON.parse(localStorage.getItem(CPK)||"{}")}catch(e){return {}}})());
+P.cp=Object.assign({cat:"",durar:30,prazo:10,base:"maior",modo:"repor",todos:false,dept:"PRODUÇÃO",crit:"auto",setor:"ALMOXARIFADO"},(()=>{try{return JSON.parse(localStorage.getItem(CPK)||"{}")}catch(e){return {}}})());
 P.cpJa=(()=>{try{return JSON.parse(localStorage.getItem(CPJ)||"{}")}catch(e){return {}}})();P.cpQ={};P.cpX={};P.cpH=null;
 /* já pedido: {q, d}; o que entrou no estoque depois da data do pedido é descontado sozinho */
 const cpJaEf=id=>{const o=P.cpJa[id];if(!o)return 0;const q=typeof o==="number"?o:Number(o.q||0),d=typeof o==="number"?"0000":String(o.d||"0000");
   const ent=((P.cpH&&P.cpH.en&&P.cpH.en[id])||[]).filter(e=>e[0]>=d).reduce((s,e)=>s+e[1],0);return Math.max(0,Math.round((q-ent)*1000)/1000)};
 const hojeISO=()=>{const h=new Date();return h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0")};
+if(!["PCP","ALMOXARIFADO","SESMT"].includes(P.cp.setor))P.cp.setor="ALMOXARIFADO";
 const cpSalvar=()=>{try{localStorage.setItem(CPK,JSON.stringify(P.cp));localStorage.setItem(CPJ,JSON.stringify(P.cpJa))}catch(e){}};
 const MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 function cpMeses(){const h=new Date();const r=[];for(let k=3;k>=0;k--){const d=new Date(h.getFullYear(),h.getMonth()-k,1);r.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"))}return r}
@@ -384,7 +385,7 @@ function vCompras(it){cpHist();const c=P.cp;const cats=[...new Set(it.map(i=>i.c
    ${rows||`<tr><td colspan="${ms.length+9}" class="muted" style="padding:18px;text-align:center">Nada para comprar com esses filtros. 🎉</td></tr>`}</table></div>
    <div class="muted" style="margin-top:8px;line-height:1.6">Por mês: <span class="cps">−saídas</span> e <span class="cpe" style="display:inline">+entradas</span> (* = mês atual, até hoje). ${c.modo==="repor"?`<b>Meta</b> = consumo de ${Number(c.durar)+Number(c.prazo)} dias (${c.durar} para durar + ${c.prazo} de prazo de entrega), nunca abaixo do estoque mínimo. <b>Comprar</b> = meta − saldo − já pedido`:`<b>Comprar</b> = consumo de ${c.modo==="mes"?"1 mês":"15 dias"} − já pedido (o saldo não é descontado: bom para manter o ritmo de compra fixo)`}, arredondado para cima; você pode mudar o número antes de gerar a requisição. <b>Já pedido</b> = o que já foi pedido e ainda não chegou: entra sozinho quando você gera a requisição e vai baixando conforme as entradas são lançadas no app (fica salvo neste computador; pode corrigir à mão). Linhas em vermelho acabam antes da entrega.</div></div>
    <div class="box"><h2>Dados da requisição</h2><div class="bar cpbar">
-    <label>Setor do solicitante<input class="in" id="cp_setor" value="${esc(c.setor)}"></label></div>
+    <label>Setor do solicitante<select class="sel" id="cp_setor">${["PCP","ALMOXARIFADO","SESMT"].map(x=>`<option ${c.setor===x?"selected":""}>${x}</option>`).join("")}</select></label></div>
     <div class="muted" style="line-height:1.6">A requisição sai no <b>formulário original BC.FO.65</b>, sem mudar o layout: o sistema escreve só os itens (descrição, estoque atual, quantidade e unidade), a data e o setor. A coluna Referência fica em branco. Departamento, criticidade, categoria e assinaturas ficam para você marcar à mão. Até 20 itens por folha.</div>
     <div class="bar" style="margin-top:8px"><span class="muted">${cpTemForm()?"✓ Formulário em branco guardado neste computador.":"Na primeira vez, o sistema pede o PDF do formulário BC.FO.65 em branco."}</span><button class="btn sec" data-act="cpForm">${cpTemForm()?"Trocar formulário":"Escolher formulário"}</button></div></div>`}
 const CAT_REQ=c=>{c=semAc(c);if(/epi|bota|unif|luva|calcad/.test(c))return "EPI";if(/limp/.test(c))return "MAT. DE LIMPEZA";if(/escrit/.test(c))return "MAT. DE ESCRITORIO";if(/ferram/.test(c))return "FERRAMENTAS";if(/pec/.test(c))return "PEÇAS";if(/manut|oleo|lubri/.test(c))return "INSUMOS (MANUTENÇÃO)";if(/prod|insum/.test(c))return "INSUMOS (PRODUÇÃO)";return "OUTROS"};
@@ -447,7 +448,7 @@ async function cpRequisicaoPdf(){const it=P.d.itens.map(I).filter(i=>i.ativo);co
       L.slice(p,p+20).forEach((i,k)=>{const top=178.6+k*15.6+10.8;
         esc_(pg,i.p,30,top,fn,7.5,240,false);
         esc_(pg,nf(Math.max(0,i.saldo)),445,top,fn,7.5,46,true);esc_(pg,nf(i.q),492,top,fb,8.5,40,true);esc_(pg,i.un,547,top,fn,7.5,60,true)});
-      esc_(pg,dd,38,671.5,fb,10,20,true);esc_(pg,mm,80,671.5,fb,10,20,true);esc_(pg,aa,130,671.5,fb,10,40,true);esc_(pg,P.cp.setor||"",334,660,fn,9,120,true)}
+      esc_(pg,dd,38,671.5,fb,10,20,true);esc_(pg,mm,80,671.5,fb,10,20,true);esc_(pg,aa,130,671.5,fb,10,40,true);esc_(pg,P.cp.setor==="__outro"?"":(P.cp.setor||""),334,660,fn,9,120,true)}
     const out=await doc.save();const url=URL.createObjectURL(new Blob([out],{type:"application/pdf"}));
     L.forEach(i=>{P.cpJa[i.id]={q:Math.round((cpJaEf(i.id)+i.q)*1000)/1000,d:hojeISO()};delete P.cpQ[i.id];delete P.cpX[i.id]});P.cp.ult=hojeISO();cpSalvar();
     const nome="Requisicao_BC.FO.65_"+aa+"-"+mm+"-"+dd+(P.cp.cat?"_"+P.cp.cat.replace(/\W+/g,"_"):"")+".pdf";
@@ -459,7 +460,8 @@ const CP={cpReq:()=>cpRequisicaoPdf(),cpLimpaJa:()=>{const L=cpLista(P.d.itens.m
     baixar("Sugestao_compras_"+(P.cp.cat||"todas").replace(/\W+/g,"_")+"_"+hojeArq()+".xlsx",xlsx("Compras",[{h:"ID",w:11},{h:"Produto",w:44},{h:"Categoria",w:16},{h:"Unidade",w:8},...ms.map(k=>({h:"Saída "+MESES[+k.slice(5)-1],w:10,t:"n1"})),...ms.map(k=>({h:"Entrada "+MESES[+k.slice(5)-1],w:11,t:"n1"})),{h:"Consumo/mês",w:12,t:"n1"},{h:"Saldo",w:9,t:"n1"},{h:"Dura (dias)",w:10,t:"i"},{h:"Meta",w:9,t:"n1"},{h:"Já pedido",w:10,t:"n1"},{h:"Comprar",w:10,t:"n1"},{h:"Vai faltar antes da entrega",w:12}],
       L.map(i=>[i.id,i.p,i.cat,i.un,...ms.map(k=>H[i.id]&&H[i.id][k]||0),...ms.map(k=>(P.cpH&&P.cpH.me&&P.cpH.me[i.id]&&P.cpH.me[i.id][k])||0),Math.round(i.mes*10)/10,i.saldo,i.dura??"",i.meta,i.ja,i.q,i.urg?"SIM":""])))}};
 document.addEventListener("change",e=>{const t=e.target;if(!t.id)return;
-  if(t.id.startsWith("cp_")){const k=t.id.slice(3);P.cp[k]=t.type==="checkbox"?t.checked:t.value;if(k==="cat"||k==="durar"||k==="prazo"||k==="base"||k==="modo"){P.cpQ={};P.cpX={}}cpSalvar();render()}
+  if(t.id==="cp_setorOutro"){P.cp.setor=t.value.trim()||"__outro";cpSalvar();render()}
+  else if(t.id.startsWith("cp_")){const k=t.id.slice(3);P.cp[k]=t.type==="checkbox"?t.checked:t.value;if(k==="cat"||k==="durar"||k==="prazo"||k==="base"||k==="modo"){P.cpQ={};P.cpX={}}cpSalvar();render()}
   else if(t.id.startsWith("cq_")){P.cpQ[t.id.slice(3)]=Math.max(0,Math.ceil(Number(t.value)||0));render()}
   else if(t.id.startsWith("cj_")){const id=t.id.slice(3),v=Math.max(0,Number(t.value)||0);if(v)P.cpJa[id]={q:v,d:hojeISO()};else delete P.cpJa[id];delete P.cpQ[id];cpSalvar();render()}
   else if(t.id.startsWith("cx_")){P.cpX[t.id.slice(3)]=t.checked;render()}});
