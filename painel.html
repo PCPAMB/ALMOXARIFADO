@@ -383,10 +383,9 @@ function vCompras(it){cpHist();const c=P.cp;const cats=[...new Set(it.map(i=>i.c
    <div class="muted" style="margin-top:8px;line-height:1.6">Saídas por mês (* = mês atual, até hoje). <b>Meta</b> = consumo de ${Number(c.durar)+Number(c.prazo)} dias (${c.durar} para durar + ${c.prazo} de prazo de entrega), nunca abaixo do estoque mínimo.
    <b>Comprar</b> = meta − saldo − já pedido, arredondado para cima; você pode mudar o número antes de gerar a requisição. <b>Já pedido</b> = o que já foi pedido e ainda não chegou: entra sozinho quando você gera a requisição e vai baixando conforme as entradas são lançadas no app (fica salvo neste computador; pode corrigir à mão). Linhas em vermelho acabam antes da entrega.</div></div>
    <div class="box"><h2>Dados da requisição</h2><div class="bar cpbar">
-    <label>Departamento<select class="sel" id="cp_dept">${["DIREÇÃO","ADMINISTRATIVO","LOGÍSTICA","PRODUÇÃO","MANUTENÇÃO","OUTROS"].map(x=>`<option ${c.dept===x?"selected":""}>${x}</option>`).join("")}</select></label>
-    <label>Criticidade<select class="sel" id="cp_crit"><option value="auto" ${c.crit==="auto"?"selected":""}>Automática (urgência se algo vai faltar)</option>${["PROGRAMÁVEL","URGÊNCIA","EMERGÊNCIA"].map(x=>`<option ${c.crit===x?"selected":""}>${x}</option>`).join("")}</select></label>
     <label>Setor do solicitante<input class="in" id="cp_setor" value="${esc(c.setor)}"></label></div>
-    <div class="muted">A requisição sai no modelo BC.FO.65 rev. 05, já preenchida, com até 20 itens por folha. Falta só assinar.</div></div>`}
+    <div class="muted" style="line-height:1.6">A requisição sai no <b>formulário original BC.FO.65</b>, sem mudar o layout: o sistema escreve só os itens (descrição, código, estoque atual, quantidade e unidade), a data e o setor. Departamento, criticidade, categoria e assinaturas ficam para você marcar à mão. Até 20 itens por folha.</div>
+    <div class="bar" style="margin-top:8px"><span class="muted">${cpTemForm()?"✓ Formulário em branco guardado neste computador.":"Na primeira vez, o sistema pede o PDF do formulário BC.FO.65 em branco."}</span><button class="btn sec" data-act="cpForm">${cpTemForm()?"Trocar formulário":"Escolher formulário"}</button></div></div>`}
 const CAT_REQ=c=>{c=semAc(c);if(/epi|bota|unif|luva|calcad/.test(c))return "EPI";if(/limp/.test(c))return "MAT. DE LIMPEZA";if(/escrit/.test(c))return "MAT. DE ESCRITORIO";if(/ferram/.test(c))return "FERRAMENTAS";if(/pec/.test(c))return "PEÇAS";if(/manut|oleo|lubri/.test(c))return "INSUMOS (MANUTENÇÃO)";if(/prod|insum/.test(c))return "INSUMOS (PRODUÇÃO)";return "OUTROS"};
 function cpRequisicao(){const it=P.d.itens.map(I).filter(i=>i.ativo);const L=cpLista(it).filter(i=>i.sel&&i.q>0);if(!L.length)return;const c=P.cp;
   const urg=L.some(i=>i.urg);const crit=c.crit==="auto"?(urg?"URGÊNCIA":"PROGRAMÁVEL"):c.crit;const cats=new Set(L.map(i=>CAT_REQ(i.cat)));
@@ -427,7 +426,34 @@ function cpRequisicao(){const it=P.d.itens.map(I).filter(i=>i.ativo);const L=cpL
     .rod{font-size:7.6pt;font-weight:700;text-align:center}.pe{display:flex;justify-content:space-between;font-size:7.5pt;padding:2px 6mm}</style></head><body>
     <div class="np" style="text-align:center;margin:10px"><button onclick="print()" style="font-size:15px;padding:8px 18px;border-radius:8px;border:0;background:#cdff00;font-weight:700;cursor:pointer">Imprimir / salvar em PDF</button></div>
     ${pags.map((G,n)=>folha(G,n+1)).join("")}</body></html>`);w.document.close()}
-const CP={cpReq:()=>cpRequisicao(),
+/* BC.FO.65 original: o sistema só escreve itens, data e setor por cima do PDF oficial (layout intacto; caixas ficam para marcar à mão).
+   O formulário em branco é escolhido uma vez e fica guardado neste computador (não vai para o GitHub). */
+const FORM_KEY="almox_bcfo65_pdf";
+function cpTemForm(){try{return !!localStorage.getItem(FORM_KEY)}catch(e){return false}}
+function cpEscolherForm(depois){const inp=document.createElement("input");inp.type="file";inp.accept="application/pdf";
+  inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{localStorage.setItem(FORM_KEY,String(r.result).split(",")[1]);P.msg="Formulário BC.FO.65 guardado neste computador.";render();if(depois)depois()}catch(e){P.msg="!Não consegui guardar o formulário: "+e.message;render()}};r.readAsDataURL(f)};inp.click()}
+function cpLib(){return window.PDFLib?Promise.resolve(window.PDFLib):new Promise((ok,er)=>{const sc=document.createElement("script");sc.src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js";sc.onload=()=>ok(window.PDFLib);sc.onerror=()=>er(new Error("sem internet para carregar o gerador de PDF"));document.head.appendChild(sc)})}
+async function cpRequisicaoPdf(){const it=P.d.itens.map(I).filter(i=>i.ativo);const L=cpLista(it).filter(i=>i.sel&&i.q>0);if(!L.length)return;
+  if(!cpTemForm())return cpEscolherForm(cpRequisicaoPdf);
+  const w=window.open("","_blank");if(w)w.document.write("<p style='font-family:Arial'>Gerando a requisição…</p>");
+  try{const {PDFDocument,StandardFonts,rgb}=await cpLib();const b64=localStorage.getItem(FORM_KEY);const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    const base=await PDFDocument.load(bytes);const doc=await PDFDocument.create();const fn=await doc.embedFont(StandardFonts.Helvetica),fb=await doc.embedFont(StandardFonts.HelveticaBold);
+    const H=base.getPage(0).getHeight();const ok=t=>String(t??"").replace(/[^\x20-\x7E -ÿ–—‘’“”•…]/g,"");
+    const caber=(t,f,sz,mx)=>{t=ok(t);if(f.widthOfTextAtSize(t,sz)<=mx)return t;while(t&&f.widthOfTextAtSize(t+"…",sz)>mx)t=t.slice(0,-1);return t+"…"};
+    const esc_=(pg,t,x,top,f,sz,mx,centro)=>{t=caber(t,f,sz,mx);const wdt=f.widthOfTextAtSize(t,sz);pg.drawText(t,{x:centro?x-wdt/2:x,y:H-top,size:sz,font:f,color:rgb(0,0,0)})};
+    const hoje=new Date();const dd=String(hoje.getDate()).padStart(2,"0"),mm=String(hoje.getMonth()+1).padStart(2,"0"),aa=String(hoje.getFullYear());
+    for(let p=0;p<L.length;p+=20){const [pg]=await doc.copyPages(base,[0]);doc.addPage(pg);
+      L.slice(p,p+20).forEach((i,k)=>{const top=178.6+k*15.6+10.8;
+        esc_(pg,i.p,30,top,fn,7.5,240,false);esc_(pg,i.id+(i.end?" · end. "+i.end:""),275,top,fn,7.5,143,false);
+        esc_(pg,nf(Math.max(0,i.saldo)),445,top,fn,7.5,46,true);esc_(pg,nf(i.q),492,top,fb,8.5,40,true);esc_(pg,i.un,547,top,fn,7.5,60,true)});
+      esc_(pg,dd,38,671.5,fb,10,20,true);esc_(pg,mm,80,671.5,fb,10,20,true);esc_(pg,aa,130,671.5,fb,10,40,true);esc_(pg,P.cp.setor||"",334,660,fn,9,120,true)}
+    const out=await doc.save();const url=URL.createObjectURL(new Blob([out],{type:"application/pdf"}));
+    L.forEach(i=>{P.cpJa[i.id]={q:Math.round((cpJaEf(i.id)+i.q)*1000)/1000,d:hojeISO()};delete P.cpQ[i.id];delete P.cpX[i.id]});P.cp.ult=hojeISO();cpSalvar();
+    const nome="Requisicao_BC.FO.65_"+aa+"-"+mm+"-"+dd+(P.cp.cat?"_"+P.cp.cat.replace(/\W+/g,"_"):"")+".pdf";
+    if(w)w.location.href=url;else{const a=document.createElement("a");a.href=url;a.download=nome;a.click()}
+    P.msg=`Requisição gerada com ${L.length} item(ns)${L.length>20?" em "+Math.ceil(L.length/20)+" folhas":""}. Marque à mão departamento, criticidade e categoria e assine.`;render()}
+  catch(e){if(w)w.close();P.msg="!Não consegui gerar a requisição: "+e.message;render()}}
+const CP={cpReq:()=>cpRequisicaoPdf(),cpForm:()=>cpEscolherForm(),
   cpXls:()=>{const L=cpLista(P.d.itens.map(I).filter(i=>i.ativo));const ms=cpMeses();const H=(P.cpH&&P.cpH.m)||{};
     baixar("Sugestao_compras_"+(P.cp.cat||"todas").replace(/\W+/g,"_")+"_"+hojeArq()+".xlsx",xlsx("Compras",[{h:"ID",w:11},{h:"Produto",w:44},{h:"Categoria",w:16},{h:"Unidade",w:8},...ms.map(k=>({h:"Saída "+MESES[+k.slice(5)-1],w:10,t:"n1"})),{h:"Consumo/mês",w:12,t:"n1"},{h:"Saldo",w:9,t:"n1"},{h:"Dura (dias)",w:10,t:"i"},{h:"Meta",w:9,t:"n1"},{h:"Já pedido",w:10,t:"n1"},{h:"Comprar",w:10,t:"n1"},{h:"Vai faltar antes da entrega",w:12}],
       L.map(i=>[i.id,i.p,i.cat,i.un,...ms.map(k=>H[i.id]&&H[i.id][k]||0),Math.round(i.mes*10)/10,i.saldo,i.dura??"",i.meta,i.ja,i.q,i.urg?"SIM":""])))}};
