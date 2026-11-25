@@ -101,9 +101,9 @@ function render(){
     <input class="in" id="quem" placeholder="Seu nome" value="${esc(P.quem)}" autocomplete="name"><input class="in" id="senha" type="password" placeholder="Senha do painel" autocomplete="current-password">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}<button class="btn" data-act="entrar">Entrar</button></div>`;
   if(!P.d)return $("app").innerHTML=hd()+`<div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:`<p class="muted">Carregando…</p>`}</div>`;
   const it=P.d.itens.map(I).filter(i=>i.ativo);const crit=it.filter(i=>["critico","zerado","negativo"].includes(i.nv));
-  const tabs=[["criticos","Críticos",crit.length],["estoque","Estoque"],["movimentos","Movimentos"],["consumo","Consumo"],["compras","Compras"]];if(P.d.gestao)tabs.push(["cadastro","Cadastro"]);if(P.tab==="cadastro"&&!P.d.gestao)P.tab="criticos";
+  const tabs=[["criticos","Críticos",crit.length],["estoque","Estoque"],["movimentos","Movimentos"],["consumo","Consumo"],["compras","Compras"]];if(P.d.gestao)tabs.push(["lancar","Lançar"],["cadastro","Cadastro"]);if(P.tab==="lancar"&&!P.d.gestao)P.tab="criticos";if(P.tab==="cadastro"&&!P.d.gestao)P.tab="criticos";
   $("app").innerHTML=hd()+`<div class="tabs">${tabs.map(t=>`<div class="tab ${P.tab===t[0]?"on":""}" data-act="tab" data-v="${t[0]}">${t[1]}${t[2]?`<span class="b">${t[2]}</span>`:""}</div>`).join("")}</div>
-   <div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}${P.msg?`<div class="${P.msg[0]==="!"?"err":"okm"}">${esc(P.msg.replace(/^!/,""))}</div>`:""}${{criticos:vCrit,estoque:vEst,movimentos:vMov,consumo:vCons,compras:vCompras,cadastro:vCad}[P.tab](it)}</div>`;
+   <div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}${P.msg?`<div class="${P.msg[0]==="!"?"err":"okm"}">${esc(P.msg.replace(/^!/,""))}</div>`:""}${{criticos:vCrit,estoque:vEst,movimentos:vMov,consumo:vCons,compras:vCompras,lancar:vLancar,cadastro:vCad}[P.tab](it)}</div>`;
   if(P.foco){const e=$(P.foco);if(e){e.focus();const v=e.value;e.value="";e.value=v}P.foco=""}
 }
 const hd=()=>`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Painel do estoque</h1>
@@ -483,6 +483,57 @@ document.addEventListener("change",e=>{const t=e.target;if(t.classList&&t.classL
   else if(t.id.startsWith("cq_")){P.cpQ[t.id.slice(3)]=Math.max(0,Math.ceil(Number(t.value)||0));render()}
   else if(t.id.startsWith("cj_")){const id=t.id.slice(3),v=Math.max(0,Number(t.value)||0);if(v)P.cpJa[id]={q:v,d:hojeISO()};else delete P.cpJa[id];delete P.cpQ[id];cpSalvar();render()}
   else if(t.id.startsWith("cx_")){P.cpX[t.id.slice(3)]=t.checked;render()}});
+/* ===================== LANÇAR (entrada / saída / devolução / ajuste) pelo painel ===================== */
+P.ln={tipo:"Saída",data:"",pessoa:"",nf:"",obs:"",linhas:[],busca:"",enviando:false};P.pessoas=null;
+const LN_TIPOS=[["Entrada","Entrada","chegou material (compra, NF)"],["Saída","Saída","material entregue para alguém"],["Devolução","Devolução","voltou material para o estoque"],["Ajuste","Ajuste (contagem)","corrigir o saldo pela contagem física"]];
+async function lnPessoas(){if(P.pessoas)return;P.pessoas=[];try{const j=await api({a:"pessoasPainel"});P.pessoas=j.pessoas||[];if(P.tab==="lancar")render()}catch(e){}}
+function vLancar(it){lnPessoas();const L=P.ln;const hoje=hojeISO();const ids={};it.forEach(i=>ids[i.id]=i);
+  const aj=L.tipo==="Ajuste";const sinal=L.tipo==="Saída"?-1:1;
+  const linhas=L.linhas.map((x,n)=>{const i=ids[x.id];if(!i)return "";const q=Number(x.q)||0;const dep=aj?q:Math.round((i.saldo+sinal*q)*1000)/1000;const dif=aj?Math.round((q-i.saldo)*1000)/1000:null;
+    return `<tr><td><b>${esc(i.p)}</b><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · end. "+esc(i.end):""}</div></td><td class="n">${nf(i.saldo)} ${esc(i.un)}</td>
+    <td class="n"><input class="in cpi cpq" id="lq_${n}" type="number" min="0" step="any" value="${x.q??""}" placeholder="${aj?"contado":"qtd"}"></td>
+    <td class="n">${x.q===""||x.q==null?"—":aj?`<b class="${dif<0?"cpr":dif>0?"cpe":""}">${dif>0?"+":""}${nf(dif)}</b>`:`<b class="${dep<0?"cpr":""}">${nf(dep)}</b>`}</td>
+    <td><button class="btn sec" data-act="lnTira" data-v="${n}" style="padding:4px 10px">✕</button></td></tr>`}).join("");
+  const pesLbl=L.tipo==="Entrada"?"Fornecedor (opcional)":L.tipo==="Saída"?"Para quem *":L.tipo==="Devolução"?"Quem devolveu *":"";
+  const pesTipo=L.tipo==="Entrada"?"Fornecedor":"Colaborador";
+  const nomes=(P.pessoas||[]).filter(p=>!p[1]||L.tipo!=="Entrada"?p[1]!=="Fornecedor":p[1]==="Fornecedor").map(p=>p[0]);
+  const meus=P.d.movs.map(M).filter(m=>m.org==="Painel").slice(-15).reverse();
+  return `<div class="box"><h2>Lançar movimento<span class="sp"></span><span class="muted">lançado como: <b>${esc(P.quem)}</b> (painel)</span></h2>
+   <div class="bar" style="gap:8px;margin-bottom:12px">${LN_TIPOS.map(t=>`<button class="btn ${L.tipo===t[0]?"":"sec"}" data-act="lnTipo" data-v="${t[0]}" title="${t[2]}">${t[1]}</button>`).join("")}</div>
+   <div class="bar cpbar"><label>Data<input class="in" type="date" id="ln_data" max="${hoje}" value="${L.data||hoje}"></label>
+    ${pesLbl?`<label>${pesLbl}<input class="in" id="ln_pessoa" list="lnPes" value="${esc(L.pessoa)}" placeholder="${L.tipo==="Entrada"?"ex.: fornecedor":"nome da pessoa"}" style="width:260px"><datalist id="lnPes">${nomes.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></label>`:""}
+    ${L.tipo==="Entrada"?`<label>NF<input class="in" id="ln_nf" value="${esc(L.nf)}" style="width:130px" placeholder="nº da nota"></label>`:""}
+    <label style="flex:1">${aj?"Motivo do ajuste *":"Observação"}<input class="in" id="ln_obs" value="${esc(L.obs)}" style="width:100%" placeholder="${aj?"ex.: inventário de novembro":"opcional"}"></label></div>
+   <div class="bar cpbar" style="margin-top:10px"><label style="flex:1">Adicionar item<input class="in" id="ln_busca" list="lnIt" placeholder="digite o nome ou o código e escolha da lista" style="width:100%" autocomplete="off">
+    <datalist id="lnIt">${it.map(i=>`<option value="${esc(i.id)} — ${esc(i.p)}">${nf(i.saldo)} ${esc(i.un)}</option>`).join("")}</datalist></label></div>
+   ${L.linhas.length?`<div class="tw" style="margin-top:10px"><table><tr><th>Item</th><th class="n">Saldo agora</th><th class="n">${aj?"Contagem física":"Quantidade"}</th><th class="n">${aj?"Diferença":"Saldo depois"}</th><th></th></tr>${linhas}</table></div>`
+     :`<div class="muted" style="padding:16px 4px">Nenhum item ainda. Procure acima e escolha para adicionar.</div>`}
+   <div class="bar" style="margin-top:12px"><span class="muted">${aj?"No ajuste você informa quanto CONTOU; o sistema lança a diferença (Ajuste + ou −).":L.tipo==="Saída"?"A saída não deixa o saldo ficar negativo.":""}</span><span class="sp"></span>
+    ${L.linhas.length?`<button class="btn sec" data-act="lnLimpar">Limpar</button>`:""}<button class="btn" data-act="lnEnviar" ${L.linhas.length&&!L.enviando?"":"disabled"}>${L.enviando?"Lançando…":"Lançar "+(aj?"ajuste":L.tipo.toLowerCase())}</button></div></div>
+   <div class="box"><h2>Últimos lançamentos feitos pelo painel <span class="muted" style="font-weight:400;font-size:13px">(no período do filtro)</span></h2>
+   ${meus.length?`<div class="tw"><table><tr><th>Data</th><th>Tipo</th><th>Item</th><th class="n">Qtd</th><th>Pessoa / NF</th><th>Quem</th><th>Situação</th><th></th></tr>${meus.map(m=>`<tr${m.st==="Estornado"?' style="opacity:.55"':""}><td>${dBR(m.d)}</td><td>${esc(m.t)}</td><td><b>${esc(m.p)}</b><div class="muted">${esc(m.item)} · ${esc(m.id)}</div></td><td class="n">${nf(m.q)} ${esc(m.un)}</td><td>${esc(m.pes||"")}${m.nf?" · NF "+esc(m.nf):""}</td><td>${esc(m.est||"")}</td><td>${m.st==="Estornado"?"Estornado":"Ativo"}</td><td>${m.st==="Estornado"?"":`<button class="btn sec" data-act="lnEstornar" data-v="${esc(m.id)}" style="padding:4px 10px">Estornar</button>`}</td></tr>`).join("")}</table></div>`:`<div class="muted">Nenhum lançamento pelo painel no período.</div>`}</div>`}
+const LN={lnTipo:v=>{P.ln.tipo=v;P.ln.pessoa="";P.ln.nf="";render()},
+  lnTira:v=>{P.ln.linhas.splice(Number(v),1);render()},
+  lnLimpar:()=>{P.ln.linhas=[];P.ln.obs="";P.ln.pessoa="";P.ln.nf="";render()},
+  lnEstornar:async v=>{const id=v;const mot=prompt("Motivo do estorno de "+id+":");if(!mot||!mot.trim())return;
+    try{await api({a:"estornarPainel",id,motivo:mot.trim(),quem:P.quem});P.msg="Lançamento "+id+" estornado.";await carregar()}catch(e){P.msg="!"+e.message;render()}},
+  lnEnviar:async()=>{const L=P.ln;if(L.enviando)return;const ids={};P.d.itens.map(I).forEach(i=>ids[i.id]=i);
+    const its=L.linhas.filter(x=>x.q!==""&&x.q!=null);if(!its.length){P.msg="!Informe a quantidade dos itens.";return render()}
+    if((L.tipo==="Saída"||L.tipo==="Devolução")&&!L.pessoa.trim()){P.msg="!Informe "+(L.tipo==="Saída"?"para quem é o material.":"quem devolveu.");return render()}
+    if(L.tipo==="Ajuste"&&!L.obs.trim()){P.msg="!Informe o motivo do ajuste.";return render()}
+    const base={data:L.data||hojeISO(),pessoa:L.pessoa.trim(),nf:L.nf.trim(),obs:L.obs.trim()};const lotes=[];const rid=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    if(L.tipo==="Ajuste"){const mais=[],menos=[];its.forEach(x=>{const d=Math.round((Number(x.q)-ids[x.id].saldo)*1000)/1000;if(d>0)mais.push({id:x.id,qtd:d});else if(d<0)menos.push({id:x.id,qtd:-d})});
+      if(mais.length)lotes.push(Object.assign({},base,{id:"PNL-"+rid+"-A",tipo:"Ajuste (+)",itens:mais}));if(menos.length)lotes.push(Object.assign({},base,{id:"PNL-"+rid+"-B",tipo:"Ajuste (-)",itens:menos}));
+      if(!lotes.length){P.msg="Contagem igual ao saldo: nada para ajustar.";L.linhas=[];return render()}}
+    else{if(its.some(x=>!(Number(x.q)>0))){P.msg="!Quantidade precisa ser maior que zero.";return render()}lotes.push(Object.assign({},base,{id:"PNL-"+rid,tipo:L.tipo,itens:its.map(x=>({id:x.id,qtd:Number(x.q)}))}))}
+    L.enviando=true;render();let n=0;
+    try{for(const lt of lotes){const j=await api({a:"lancarPainel",quem:P.quem,lote:lt});n+=(j.ids||[]).length}
+      P.msg=`Lançado: ${n} linha(s) de ${L.tipo==="Ajuste"?"ajuste":L.tipo.toLowerCase()}. Saldos atualizados.`;L.linhas=[];L.obs="";L.nf="";if(L.tipo!=="Saída")L.pessoa="";P.pessoas=null}
+    catch(e){P.msg="!"+e.message}L.enviando=false;await carregar()}};
+document.addEventListener("change",e=>{const t=e.target;if(!t.id)return;const L=P.ln;
+  if(t.id==="ln_busca"){const id=String(t.value).split(" — ")[0].trim();const ok=P.d.itens.some(r=>r[0]===id&&r[12]);if(ok){if(!L.linhas.some(x=>x.id===id))L.linhas.push({id,q:""});t.value="";render();setTimeout(()=>{const q=document.getElementById("lq_"+L.linhas.findIndex(x=>x.id===id));if(q)q.focus()},30)}return}
+  if(t.id.startsWith("lq_")){const n=Number(t.id.slice(3));if(L.linhas[n])L.linhas[n].q=t.value===""?"":Math.max(0,Number(t.value));render();return}
+  if(t.id==="ln_data")L.data=t.value;else if(t.id==="ln_pessoa")L.pessoa=t.value;else if(t.id==="ln_nf")L.nf=t.value;else if(t.id==="ln_obs")L.obs=t.value});
 const AC=Object.assign({
   entrar:()=>{P.senha=$("senha").value.trim();P.quem=$("quem").value.trim();salvar();P.erro="";render();carregar()},
   sair:()=>{P.senha="";P.d=null;P.ed="";P.nv={};salvar();render()},
@@ -490,7 +541,7 @@ const AC=Object.assign({
   tab:v=>{P.tab=v;P.f={};P.msg="";P.ed="";P.jn=null;P.ex=null;salvar();render()},
   periodo:()=>{P.de=$("pde").value;P.ate=$("pate").value;if(P.de>P.ate)[P.de,P.ate]=[P.ate,P.de];carregar()},
   ord:v=>{const[n,c]=v.split(":");const o=P.ord[n];P.ord[n]={c:+c,d:o&&o.c===+c?-o.d:1};render()}
-},XL,CAD,JN,CP);
+},XL,CAD,JN,CP,LN);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const f=AC[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v)}});
 document.addEventListener("input",e=>{const t=e.target;const m={fb:"b",fh:"h"}[t.id];if(m){P.f[m]=t.value;P.foco=t.id;render();return}
   if(t.id&&t.id.startsWith("n_")){P.nv[t.id.slice(2)]=t.value;if(t.id==="n_CatNova"){const p=$("n_Produto");const el=document.querySelector(".box h2 .muted b");if(el)el.textContent=prevId(t.value.trim().toUpperCase())}}
