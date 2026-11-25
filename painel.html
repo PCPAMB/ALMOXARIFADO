@@ -40,6 +40,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 tr:hover td{background:#FAFBF7}
 .sd{font-size:12px;font-weight:600;padding:2px 9px;border-radius:10px;white-space:nowrap;display:inline-block}
 .n-ok{background:var(--okL)}.n-atencao{background:var(--warnL);color:#7A5800}.n-critico{background:#FFE0CC;color:#9A3D00}.n-zerado,.n-negativo{background:var(--err);color:#fff}
+.cpbar{gap:14px;align-items:flex-end}.cpbar label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--tx2);font-weight:600}.cpbar label.cpck{flex-direction:row;align-items:center;height:38px}.cpi{width:78px;height:32px;text-align:right}.cpq{font-weight:700;background:var(--limeL)}tr.cpu td{background:var(--errL)}.cpr{color:var(--err);font-weight:700}.cpa{color:#9a6b00;font-weight:700}.btn[disabled]{opacity:.45;cursor:default}
 .muted{color:var(--tx2);font-size:13px}
 .warn{background:var(--warnL);border:1px solid var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px}
 .err{background:var(--errL);border:1px solid var(--err);border-radius:10px;padding:10px 14px;margin-bottom:14px}
@@ -100,9 +101,9 @@ function render(){
     <input class="in" id="quem" placeholder="Seu nome" value="${esc(P.quem)}" autocomplete="name"><input class="in" id="senha" type="password" placeholder="Senha do painel" autocomplete="current-password">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}<button class="btn" data-act="entrar">Entrar</button></div>`;
   if(!P.d)return $("app").innerHTML=hd()+`<div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:`<p class="muted">Carregando…</p>`}</div>`;
   const it=P.d.itens.map(I).filter(i=>i.ativo);const crit=it.filter(i=>["critico","zerado","negativo"].includes(i.nv));
-  const tabs=[["criticos","Críticos",crit.length],["estoque","Estoque"],["movimentos","Movimentos"],["consumo","Consumo"]];if(P.d.gestao)tabs.push(["cadastro","Cadastro"]);if(P.tab==="cadastro"&&!P.d.gestao)P.tab="criticos";
+  const tabs=[["criticos","Críticos",crit.length],["estoque","Estoque"],["movimentos","Movimentos"],["consumo","Consumo"],["compras","Compras"]];if(P.d.gestao)tabs.push(["cadastro","Cadastro"]);if(P.tab==="cadastro"&&!P.d.gestao)P.tab="criticos";
   $("app").innerHTML=hd()+`<div class="tabs">${tabs.map(t=>`<div class="tab ${P.tab===t[0]?"on":""}" data-act="tab" data-v="${t[0]}">${t[1]}${t[2]?`<span class="b">${t[2]}</span>`:""}</div>`).join("")}</div>
-   <div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}${P.msg?`<div class="${P.msg[0]==="!"?"err":"okm"}">${esc(P.msg.replace(/^!/,""))}</div>`:""}${{criticos:vCrit,estoque:vEst,movimentos:vMov,consumo:vCons,cadastro:vCad}[P.tab](it)}</div>`;
+   <div class="wrap">${P.erro?`<div class="err">${esc(P.erro)}</div>`:""}${P.msg?`<div class="${P.msg[0]==="!"?"err":"okm"}">${esc(P.msg.replace(/^!/,""))}</div>`:""}${{criticos:vCrit,estoque:vEst,movimentos:vMov,consumo:vCons,compras:vCompras,cadastro:vCad}[P.tab](it)}</div>`;
   if(P.foco){const e=$(P.foco);if(e){e.focus();const v=e.value;e.value="";e.value=v}P.foco=""}
 }
 const hd=()=>`<div class="hd"><img class="logo" src="logo.png" alt="Ambipar" onerror="this.remove()"><h1>Almoxarifado · Painel do estoque</h1>
@@ -334,6 +335,107 @@ const XL={
   xlsFicha:()=>{const pes=P.f.pes.trim();const L=P.d.movs.map(M).filter(m=>m.t==="Saída"&&m.st!=="Estornado"&&semAc(m.pes)===semAc(pes));
     baixar("Ficha_"+pes.replace(/\W+/g,"_")+".xlsx",xlsx("Ficha",[{h:"Data",w:11,t:"d"},{h:"ID Produto",w:11},{h:"Produto",w:46},{h:"Categoria",w:17},{h:"Qtd",w:8,t:"n1"},{h:"Unidade",w:8},{h:"Estoquista",w:20}],L.map(m=>[m.d,m.item,m.p,m.cat,m.q,m.un,m.est])))}
 };
+/* ===================== SUGESTÃO DE COMPRAS + REQUISIÇÃO BC.FO.65 ===================== */
+const CPK="almox_compras_v1",CPJ="almox_compras_pedido_v1";
+P.cp=Object.assign({cat:"",durar:30,prazo:10,base:"maior",todos:false,dept:"PRODUÇÃO",crit:"auto",setor:"Almoxarifado"},(()=>{try{return JSON.parse(localStorage.getItem(CPK)||"{}")}catch(e){return {}}})());
+P.cpJa=(()=>{try{return JSON.parse(localStorage.getItem(CPJ)||"{}")}catch(e){return {}}})();P.cpQ={};P.cpX={};P.cpH=null;
+/* já pedido: {q, d}; o que entrou no estoque depois da data do pedido é descontado sozinho */
+const cpJaEf=id=>{const o=P.cpJa[id];if(!o)return 0;const q=typeof o==="number"?o:Number(o.q||0),d=typeof o==="number"?"0000":String(o.d||"0000");
+  const ent=((P.cpH&&P.cpH.en&&P.cpH.en[id])||[]).filter(e=>e[0]>=d).reduce((s,e)=>s+e[1],0);return Math.max(0,Math.round((q-ent)*1000)/1000)};
+const hojeISO=()=>{const h=new Date();return h.getFullYear()+"-"+String(h.getMonth()+1).padStart(2,"0")+"-"+String(h.getDate()).padStart(2,"0")};
+const cpSalvar=()=>{try{localStorage.setItem(CPK,JSON.stringify(P.cp));localStorage.setItem(CPJ,JSON.stringify(P.cpJa))}catch(e){}};
+const MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+function cpMeses(){const h=new Date();const r=[];for(let k=3;k>=0;k--){const d=new Date(h.getFullYear(),h.getMonth()-k,1);r.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"))}return r}
+async function cpHist(){const ms=cpMeses();const de=ms[0]+"-01";if(P.cpH&&P.cpH.de===de)return;P.cpH={de,carregando:true,m:{}};
+  try{const j=await api({a:"painel",de,ate:new Date().toISOString().slice(0,10)});const m={};
+    const en={};j.movs.map(M).forEach(x=>{if(x.st==="Estornado")return;if(x.t==="Entrada"){(en[x.item]=en[x.item]||[]).push([String(x.d).slice(0,10),Number(x.q||0)]);return}if(x.t!=="Saída")return;const k=String(x.d).slice(0,7);(m[x.item]=m[x.item]||{})[k]=(m[x.item][k]||0)+Number(x.q||0)});P.cpH={de,m,en}}
+  catch(e){P.cpH={de,m:{},erro:e.message}}if(P.tab==="compras")render()}
+/* cálculo: consumo/mês × (dias para durar + prazo de entrega) ÷ 30, nunca abaixo do mínimo; comprar = meta − saldo − já pedido */
+function cpCalc(i){const c=P.cp;const m3=i.c90/3,m1=i.c30;const mes=c.base==="m3"?m3:c.base==="m1"?m1:Math.max(m3,m1);const dia=mes/30;
+  const meta=Math.max(Math.ceil(dia*(Number(c.durar)+Number(c.prazo))),i.min||0);const ja=cpJaEf(i.id);
+  const sug=Math.max(0,Math.ceil(meta-Math.max(0,i.saldo)-ja));const dura=dia>0?Math.floor(Math.max(0,i.saldo)/dia):null;
+  const q=P.cpQ[i.id]!=null?Number(P.cpQ[i.id]):sug;const urg=i.saldo<=0||(dura!=null&&dura<Number(c.prazo));
+  return Object.assign({},i,{mes,dia,meta,ja,sug,q,dura,urg,sel:P.cpX[i.id]!=null?P.cpX[i.id]:q>0})}
+function cpLista(it){const c=P.cp;return it.filter(i=>!c.cat||i.cat===c.cat).map(cpCalc).filter(i=>c.todos||i.sug>0||i.q>0||i.ja>0)
+  .sort((a,b)=>(b.urg-a.urg)||((a.dura??9e9)-(b.dura??9e9))||a.p.localeCompare(b.p,"pt-BR"))}
+function vCompras(it){cpHist();const c=P.cp;const cats=[...new Set(it.map(i=>i.cat))].sort();const L=cpLista(it);const ms=cpMeses();const H=(P.cpH&&P.cpH.m)||{};
+  const sel=L.filter(i=>i.sel&&i.q>0),urg=L.filter(i=>i.urg&&i.q>0).length;
+  const prox=(c.ult?new Date(c.ult+"T12:00").getTime()+15*864e5>Date.now()?new Date(new Date(c.ult+"T12:00").getTime()+15*864e5):new Date():new Date()).toLocaleDateString("pt-BR");
+  const rows=L.map(i=>`<tr class="${i.urg?"cpu":""}"><td><input type="checkbox" id="cx_${esc(i.id)}" ${i.sel?"checked":""}></td>
+    <td><b>${esc(i.p)}</b><div class="muted">${esc(i.id)} · ${esc(i.cat)}</div></td>
+    ${ms.map((k,n)=>`<td class="n muted">${H[i.id]&&H[i.id][k]?nf(H[i.id][k]):(P.cpH&&P.cpH.carregando?"…":"0")}</td>`).join("")}
+    <td class="n"><b>${nf(Math.round(i.mes*10)/10)}</b></td><td class="n"><b>${nf(i.saldo)}</b> ${esc(i.un)}</td>
+    <td class="n">${i.dura==null?"—":`<span class="${i.urg?"cpr":i.dura<Number(c.durar)?"cpa":""}">${i.dura} d</span>`}</td>
+    <td class="n">${nf(i.meta)}</td><td class="n"><input class="in cpi" id="cj_${esc(i.id)}" type="number" min="0" step="1" value="${i.ja||""}" placeholder="0"></td>
+    <td class="n"><input class="in cpi cpq" id="cq_${esc(i.id)}" type="number" min="0" step="1" value="${i.q}"></td><td>${esc(i.un)}</td></tr>`).join("");
+  return `<div class="box"><h2>Sugestão de compras<span class="sp"></span><span class="muted">${sel.length} item(ns) selecionado(s)</span>
+    <button class="btn sec" data-act="cpXls">Baixar (Excel)</button><button class="btn" data-act="cpReq" ${sel.length?"":"disabled"}>Gerar requisição BC.FO.65</button></h2>
+   <div class="bar cpbar"><label>Categoria<select class="sel" id="cp_cat"><option value="">Todas</option>${cats.map(x=>`<option ${c.cat===x?"selected":""}>${esc(x)}</option>`).join("")}</select></label>
+    <label>Durar (dias)<input class="in" id="cp_durar" type="number" min="1" value="${c.durar}" style="width:80px"></label>
+    <label>Prazo de entrega (dias)<input class="in" id="cp_prazo" type="number" min="0" value="${c.prazo}" style="width:80px"></label>
+    <label>Consumo usado<select class="sel" id="cp_base"><option value="maior" ${c.base==="maior"?"selected":""}>O maior: média 3 meses ou último mês</option><option value="m3" ${c.base==="m3"?"selected":""}>Média dos últimos 3 meses</option><option value="m1" ${c.base==="m1"?"selected":""}>Últimos 30 dias</option></select></label>
+    <label class="cpck"><input type="checkbox" id="cp_todos" ${c.todos?"checked":""}> mostrar itens que não precisam</label></div>
+   <div class="kpis"><div class="kpi ${urg?"r":"g"}"><div class="v">${urg}</div><div class="l">vão faltar antes de a compra chegar (${c.prazo} dias)</div></div>
+    <div class="kpi a"><div class="v">${L.filter(i=>i.q>0).length}</div><div class="l">itens para comprar ${c.cat?"em "+esc(c.cat):""}</div></div>
+    <div class="kpi"><div class="v" style="font-size:20px">${prox}</div><div class="l">${c.ult?"último pedido "+dBR(c.ult)+" · próximo pedido":"próximo pedido (a cada 15 dias)"}</div></div></div>
+   <div class="tw"><table class="cpt"><tr><th></th><th>Item</th>${ms.map((k,n)=>`<th class="n">${MESES[+k.slice(5)-1]}${n===3?"*":""}</th>`).join("")}<th class="n">Consumo/mês</th><th class="n">Saldo</th><th class="n">Dura</th><th class="n">Meta</th><th class="n">Já pedido</th><th class="n">Comprar</th><th>Und</th></tr>
+   ${rows||`<tr><td colspan="${ms.length+9}" class="muted" style="padding:18px;text-align:center">Nada para comprar com esses filtros. 🎉</td></tr>`}</table></div>
+   <div class="muted" style="margin-top:8px;line-height:1.6">Saídas por mês (* = mês atual, até hoje). <b>Meta</b> = consumo de ${Number(c.durar)+Number(c.prazo)} dias (${c.durar} para durar + ${c.prazo} de prazo de entrega), nunca abaixo do estoque mínimo.
+   <b>Comprar</b> = meta − saldo − já pedido, arredondado para cima; você pode mudar o número antes de gerar a requisição. <b>Já pedido</b> = o que já foi pedido e ainda não chegou: entra sozinho quando você gera a requisição e vai baixando conforme as entradas são lançadas no app (fica salvo neste computador; pode corrigir à mão). Linhas em vermelho acabam antes da entrega.</div></div>
+   <div class="box"><h2>Dados da requisição</h2><div class="bar cpbar">
+    <label>Departamento<select class="sel" id="cp_dept">${["DIREÇÃO","ADMINISTRATIVO","LOGÍSTICA","PRODUÇÃO","MANUTENÇÃO","OUTROS"].map(x=>`<option ${c.dept===x?"selected":""}>${x}</option>`).join("")}</select></label>
+    <label>Criticidade<select class="sel" id="cp_crit"><option value="auto" ${c.crit==="auto"?"selected":""}>Automática (urgência se algo vai faltar)</option>${["PROGRAMÁVEL","URGÊNCIA","EMERGÊNCIA"].map(x=>`<option ${c.crit===x?"selected":""}>${x}</option>`).join("")}</select></label>
+    <label>Setor do solicitante<input class="in" id="cp_setor" value="${esc(c.setor)}"></label></div>
+    <div class="muted">A requisição sai no modelo BC.FO.65 rev. 05, já preenchida, com até 20 itens por folha. Falta só assinar.</div></div>`}
+const CAT_REQ=c=>{c=semAc(c);if(/epi|bota|unif|luva|calcad/.test(c))return "EPI";if(/limp/.test(c))return "MAT. DE LIMPEZA";if(/escrit/.test(c))return "MAT. DE ESCRITORIO";if(/ferram/.test(c))return "FERRAMENTAS";if(/pec/.test(c))return "PEÇAS";if(/manut|oleo|lubri/.test(c))return "INSUMOS (MANUTENÇÃO)";if(/prod|insum/.test(c))return "INSUMOS (PRODUÇÃO)";return "OUTROS"};
+function cpRequisicao(){const it=P.d.itens.map(I).filter(i=>i.ativo);const L=cpLista(it).filter(i=>i.sel&&i.q>0);if(!L.length)return;const c=P.cp;
+  const urg=L.some(i=>i.urg);const crit=c.crit==="auto"?(urg?"URGÊNCIA":"PROGRAMÁVEL"):c.crit;const cats=new Set(L.map(i=>CAT_REQ(i.cat)));
+  const hoje=new Date();const dd=String(hoje.getDate()).padStart(2,"0"),mm=String(hoje.getMonth()+1).padStart(2,"0"),aa=hoje.getFullYear();
+  const motivo=`Reposição de estoque do almoxarifado${c.cat?" ("+c.cat+")":""}: quantidade para durar ${c.durar} dias + ${c.prazo} dias de prazo de entrega, pelo consumo ${c.base==="m3"?"médio dos últimos 3 meses":c.base==="m1"?"dos últimos 30 dias":"(o maior entre a média de 3 meses e o último mês)"}.`;
+  const ck=(on,t)=>`<span class="ck"><i>${on?"X":""}</i>${t}</span>`;let logo=new URL("logo.png",location.href).href;try{const im=document.querySelector(".hd img.logo");if(im&&im.naturalWidth){const cv=document.createElement("canvas");cv.width=im.naturalWidth;cv.height=im.naturalHeight;cv.getContext("2d").drawImage(im,0,0);logo=cv.toDataURL("image/png")}}catch(e){}
+  const pags=[];for(let p=0;p<L.length;p+=20)pags.push(L.slice(p,p+20));
+  const folha=(G,np)=>`<div class="fl"><table class="f"><colgroup><col style="width:4%"><col style="width:13%"><col style="width:24%"><col style="width:11%"><col style="width:10%"><col style="width:14%"><col style="width:8%"><col style="width:8%"><col style="width:8%"></colgroup>
+    <tr class="top"><td colspan="3" class="lg"><img src="${logo}" onerror="this.outerHTML='<b style=font-size:22px>ambipar</b>'"></td><td colspan="4" class="tit">REQUISIÇÃO DE COMPRA - INTERNA${pags.length>1?` <small>(folha ${np} de ${pags.length})</small>`:""}</td><td colspan="2" class="rev">BC.FO.65<br>REV.:05<br><b>DATA:</b> 20/08/2026</td></tr>
+    <tr><td colspan="2" class="lb">Departamento</td><td colspan="2" class="op">${ck(c.dept==="DIREÇÃO","DIREÇÃO")}${ck(c.dept==="LOGÍSTICA","LOGÍSTICA")}${ck(c.dept==="MANUTENÇÃO","MANUTENÇÃO")}<br>${ck(c.dept==="ADMINISTRATIVO","ADMINISTRATIVO")}${ck(c.dept==="PRODUÇÃO","PRODUÇÃO")}${ck(c.dept==="OUTROS","OUTROS")}</td>
+      <td class="lb">Criticidade</td><td class="op">${ck(crit==="PROGRAMÁVEL","PROGRAMÁVEL")}<br>${ck(crit==="URGÊNCIA","URGÊNCIA")}<br>${ck(crit==="EMERGÊNCIA","EMERGÊNCIA")}</td><td class="lb">Parada?</td><td colspan="2" class="op">${ck(false,"SIM")}${ck(true,"NÃO")}</td></tr>
+    <tr><td colspan="2" class="lb sm">Descrição Ativo<br>(Máq/Equip/Frota):</td><td colspan="2" class="val">Almoxarifado · reposição de estoque</td><td class="lb sm">Cód do Bem:<br>Placa:</td><td colspan="4" class="val"></td></tr>
+    <tr><td colspan="2" class="lb">Motivo</td><td colspan="7" class="val mot">${esc(motivo)}</td></tr>
+    <tr><td colspan="9" class="cats">${["EPI","FERRAMENTAS","INSUMOS (MANUTENÇÃO)","INSUMOS (PRODUÇÃO)","MAT. DE ESCRITORIO","MAT. DE LIMPEZA","PEÇAS","OUTROS"].map(x=>ck(cats.has(x),x)).join("")}</td></tr>
+    <tr class="th"><td>IT</td><td colspan="3">DESCRIÇÃO</td><td colspan="2">REFERÊNCIA</td><td>ESTOQUE<br>ATUAL</td><td>SOLICITAR<br>QTD</td><td>UND DE<br>MEDIDA</td></tr>
+    ${Array.from({length:20},(_,k)=>{const i=G[k];return `<tr class="ln"><td class="c">${k+1}</td><td colspan="3">${i?esc(i.p):""}</td><td colspan="2">${i?esc(i.id)+(i.end?" · end. "+esc(i.end):""):""}</td><td class="c">${i?nf(Math.max(0,i.saldo)):""}</td><td class="c"><b>${i?nf(i.q):""}</b></td><td class="c">${i?esc(i.un):""}</td></tr>`}).join("")}
+    <tr><td colspan="9" class="srv"><b>PRESTAÇÃO DE SERVIÇO EXTERNO</b><br>Descrever o tipo de Serviço de forma detalhada e completa</td></tr>
+    ${Array.from({length:2},()=>`<tr class="ln"><td colspan="9"></td></tr>`).join("")}
+    <tr class="sh"><td colspan="3">Data da Solicitação</td><td colspan="2">Assinatura do Solicitante</td><td colspan="2">Setor do Solicitante</td><td colspan="2">Assinatura do Gestor Responsável</td></tr>
+    <tr class="sg"><td colspan="3" class="c dt">${dd} / ${mm} / ${aa}</td><td colspan="2"></td><td colspan="2" class="c">${esc(c.setor)}</td><td colspan="2"></td></tr>
+    <tr class="sh lime"><td colspan="3">Data recebido</td><td colspan="2">Assinatura do Suprimentos</td><td colspan="2">Status</td><td colspan="2">Observações</td></tr>
+    <tr class="sg"><td colspan="3" class="c dt">&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;&nbsp;&nbsp; /</td><td colspan="2"></td><td colspan="2" class="c">${ck(false,"ATENDIDO")} ${ck(false,"NÃO APROVADO")}</td><td colspan="2"></td></tr>
+    <tr><td colspan="9" class="srv"><b>SEM ESTE PROCEDIMENTO, O PEDIDO NÃO SERÁ PROCESSADO.</b></td></tr>
+    <tr><td colspan="9" class="rod">Sempre que sua equipe precisar de qualquer bem (produto) ou serviço que NÃO esteja disponível no estoque, é OBRIGATÓRIO abrir uma Requisição de Compra, contendo todas as descrições de forma Detalhada e Completa.</td></tr></table>
+    <div class="pe"><span>BC FO 65 - Revisão 05 Data: 20/08/2026</span><span>SLA: 10d</span></div></div>`;
+  const w=window.open("","_blank");if(!w){P.msg="!Libere pop-ups para gerar a requisição.";return render()}
+  L.forEach(i=>{P.cpJa[i.id]={q:Math.round((cpJaEf(i.id)+i.q)*1000)/1000,d:hojeISO()};delete P.cpQ[i.id];delete P.cpX[i.id]});P.cp.ult=hojeISO();cpSalvar();setTimeout(render,300);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Requisição de compra ${dd}-${mm}-${aa}</title><style>
+    @page{size:A4 portrait;margin:8mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#111;background:#eee}
+    .fl{width:194mm;margin:8px auto;background:#fff;page-break-after:always}.fl:last-child{page-break-after:auto}@media print{body{background:#fff}.fl{margin:0}.np{display:none}}
+    table.f{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9pt}table.f td{border:1px solid #9a9a9a;padding:2px 4px;vertical-align:middle}
+    .top td{background:#cdff00;height:13mm}.lg{padding-left:12px!important}.lg img{height:7mm;filter:invert(1)}.tit{text-align:center;font-weight:800;font-size:11.5pt}.tit small{font-weight:400;font-size:8pt}.rev{text-align:center;font-size:8pt;font-weight:700;line-height:1.35}
+    .lb{font-weight:700;text-align:center;background:#fafafa;font-size:9pt}.lb.sm{font-size:8pt}.op{font-size:8pt;line-height:1.7}.val{font-size:9pt;font-weight:600}.mot{font-size:8.3pt;font-weight:400;height:9mm}
+    .ck{display:inline-flex;align-items:center;gap:3px;margin-right:9px;white-space:nowrap}.ck i{display:inline-block;width:3.2mm;height:3.2mm;border:1px solid #333;font-style:normal;font-weight:800;font-size:7.5pt;line-height:3mm;text-align:center}
+    .cats{font-size:7.8pt;padding:4px 6px!important}.cats .ck{margin-right:12px}.th td{background:#f0f0f0;font-weight:700;text-align:center;font-size:7.8pt;line-height:1.15}
+    .ln td{height:6.2mm;font-size:8.6pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.c{text-align:center}.srv{background:#dcdcdc;text-align:center;font-size:8.5pt}
+    .sh td{background:#f0f0f0;font-weight:700;text-align:center;font-size:8.3pt}.sh.lime td{border-top:3px solid #cdff00}.sg td{height:13mm;vertical-align:bottom;padding-bottom:4px}.dt{font-size:10pt;font-weight:700}
+    .rod{font-size:7.6pt;font-weight:700;text-align:center}.pe{display:flex;justify-content:space-between;font-size:7.5pt;padding:2px 6mm}</style></head><body>
+    <div class="np" style="text-align:center;margin:10px"><button onclick="print()" style="font-size:15px;padding:8px 18px;border-radius:8px;border:0;background:#cdff00;font-weight:700;cursor:pointer">Imprimir / salvar em PDF</button></div>
+    ${pags.map((G,n)=>folha(G,n+1)).join("")}</body></html>`);w.document.close()}
+const CP={cpReq:()=>cpRequisicao(),
+  cpXls:()=>{const L=cpLista(P.d.itens.map(I).filter(i=>i.ativo));const ms=cpMeses();const H=(P.cpH&&P.cpH.m)||{};
+    baixar("Sugestao_compras_"+(P.cp.cat||"todas").replace(/\W+/g,"_")+"_"+hojeArq()+".xlsx",xlsx("Compras",[{h:"ID",w:11},{h:"Produto",w:44},{h:"Categoria",w:16},{h:"Unidade",w:8},...ms.map(k=>({h:"Saída "+MESES[+k.slice(5)-1],w:10,t:"n1"})),{h:"Consumo/mês",w:12,t:"n1"},{h:"Saldo",w:9,t:"n1"},{h:"Dura (dias)",w:10,t:"i"},{h:"Meta",w:9,t:"n1"},{h:"Já pedido",w:10,t:"n1"},{h:"Comprar",w:10,t:"n1"},{h:"Vai faltar antes da entrega",w:12}],
+      L.map(i=>[i.id,i.p,i.cat,i.un,...ms.map(k=>H[i.id]&&H[i.id][k]||0),Math.round(i.mes*10)/10,i.saldo,i.dura??"",i.meta,i.ja,i.q,i.urg?"SIM":""])))}};
+document.addEventListener("change",e=>{const t=e.target;if(!t.id)return;
+  if(t.id.startsWith("cp_")){const k=t.id.slice(3);P.cp[k]=t.type==="checkbox"?t.checked:t.value;if(k==="cat"||k==="durar"||k==="prazo"||k==="base"){P.cpQ={};P.cpX={}}cpSalvar();render()}
+  else if(t.id.startsWith("cq_")){P.cpQ[t.id.slice(3)]=Math.max(0,Math.ceil(Number(t.value)||0));render()}
+  else if(t.id.startsWith("cj_")){const id=t.id.slice(3),v=Math.max(0,Number(t.value)||0);if(v)P.cpJa[id]={q:v,d:hojeISO()};else delete P.cpJa[id];delete P.cpQ[id];cpSalvar();render()}
+  else if(t.id.startsWith("cx_")){P.cpX[t.id.slice(3)]=t.checked;render()}});
 const AC=Object.assign({
   entrar:()=>{P.senha=$("senha").value.trim();P.quem=$("quem").value.trim();salvar();P.erro="";render();carregar()},
   sair:()=>{P.senha="";P.d=null;P.ed="";P.nv={};salvar();render()},
@@ -341,7 +443,7 @@ const AC=Object.assign({
   tab:v=>{P.tab=v;P.f={};P.msg="";P.ed="";P.jn=null;P.ex=null;salvar();render()},
   periodo:()=>{P.de=$("pde").value;P.ate=$("pate").value;if(P.de>P.ate)[P.de,P.ate]=[P.ate,P.de];carregar()},
   ord:v=>{const[n,c]=v.split(":");const o=P.ord[n];P.ord[n]={c:+c,d:o&&o.c===+c?-o.d:1};render()}
-},XL,CAD,JN);
+},XL,CAD,JN,CP);
 document.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const f=AC[b.dataset.act];if(f){e.preventDefault();f(b.dataset.v)}});
 document.addEventListener("input",e=>{const t=e.target;const m={fb:"b",fh:"h"}[t.id];if(m){P.f[m]=t.value;P.foco=t.id;render();return}
   if(t.id&&t.id.startsWith("n_")){P.nv[t.id.slice(2)]=t.value;if(t.id==="n_CatNova"){const p=$("n_Produto");const el=document.querySelector(".box h2 .muted b");if(el)el.textContent=prevId(t.value.trim().toUpperCase())}}
