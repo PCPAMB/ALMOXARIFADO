@@ -40,7 +40,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 tr:hover td{background:#FAFBF7}
 .sd{font-size:12px;font-weight:600;padding:2px 9px;border-radius:10px;white-space:nowrap;display:inline-block}
 .n-ok{background:var(--okL)}.n-atencao{background:var(--warnL);color:#7A5800}.n-critico{background:#FFE0CC;color:#9A3D00}.n-zerado,.n-negativo{background:var(--err);color:#fff}
-.cpbar{gap:14px;align-items:flex-end}.cpbar label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--tx2);font-weight:600}.cpbar label.cpck{flex-direction:row;align-items:center;height:38px}.cpi{width:78px;height:32px;text-align:right}.cpq{font-weight:700;background:var(--limeL)}tr.cpu td{background:var(--errL)}.cpr{color:var(--err);font-weight:700}.cpa{color:#9a6b00;font-weight:700}.btn[disabled]{opacity:.45;cursor:default}
+.cps{font-weight:600}.cpe{color:#2e7d32;font-size:11.5px;font-weight:700}.cpbar{gap:14px;align-items:flex-end}.cpbar label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--tx2);font-weight:600}.cpbar label.cpck{flex-direction:row;align-items:center;height:38px}.cpi{width:78px;height:32px;text-align:right}.cpq{font-weight:700;background:var(--limeL)}tr.cpu td{background:var(--errL)}.cpr{color:var(--err);font-weight:700}.cpa{color:#9a6b00;font-weight:700}.btn[disabled]{opacity:.45;cursor:default}
 .muted{color:var(--tx2);font-size:13px}
 .warn{background:var(--warnL);border:1px solid var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px}
 .err{background:var(--errL);border:1px solid var(--err);border-radius:10px;padding:10px 14px;margin-bottom:14px}
@@ -337,7 +337,7 @@ const XL={
 };
 /* ===================== SUGESTÃO DE COMPRAS + REQUISIÇÃO BC.FO.65 ===================== */
 const CPK="almox_compras_v1",CPJ="almox_compras_pedido_v1";
-P.cp=Object.assign({cat:"",durar:30,prazo:10,base:"maior",todos:false,dept:"PRODUÇÃO",crit:"auto",setor:"Almoxarifado"},(()=>{try{return JSON.parse(localStorage.getItem(CPK)||"{}")}catch(e){return {}}})());
+P.cp=Object.assign({cat:"",durar:30,prazo:10,base:"maior",modo:"repor",todos:false,dept:"PRODUÇÃO",crit:"auto",setor:"Almoxarifado"},(()=>{try{return JSON.parse(localStorage.getItem(CPK)||"{}")}catch(e){return {}}})());
 P.cpJa=(()=>{try{return JSON.parse(localStorage.getItem(CPJ)||"{}")}catch(e){return {}}})();P.cpQ={};P.cpX={};P.cpH=null;
 /* já pedido: {q, d}; o que entrou no estoque depois da data do pedido é descontado sozinho */
 const cpJaEf=id=>{const o=P.cpJa[id];if(!o)return 0;const q=typeof o==="number"?o:Number(o.q||0),d=typeof o==="number"?"0000":String(o.d||"0000");
@@ -348,12 +348,13 @@ const MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","
 function cpMeses(){const h=new Date();const r=[];for(let k=3;k>=0;k--){const d=new Date(h.getFullYear(),h.getMonth()-k,1);r.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"))}return r}
 async function cpHist(){const ms=cpMeses();const de=ms[0]+"-01";if(P.cpH&&P.cpH.de===de)return;P.cpH={de,carregando:true,m:{}};
   try{const j=await api({a:"painel",de,ate:new Date().toISOString().slice(0,10)});const m={};
-    const en={};j.movs.map(M).forEach(x=>{if(x.st==="Estornado")return;if(x.t==="Entrada"){(en[x.item]=en[x.item]||[]).push([String(x.d).slice(0,10),Number(x.q||0)]);return}if(x.t!=="Saída")return;const k=String(x.d).slice(0,7);(m[x.item]=m[x.item]||{})[k]=(m[x.item][k]||0)+Number(x.q||0)});P.cpH={de,m,en}}
+    const en={},me={};j.movs.map(M).forEach(x=>{if(x.st==="Estornado")return;if(x.t==="Entrada"){(en[x.item]=en[x.item]||[]).push([String(x.d).slice(0,10),Number(x.q||0)]);const k=String(x.d).slice(0,7);(me[x.item]=me[x.item]||{})[k]=(me[x.item][k]||0)+Number(x.q||0);return}if(x.t!=="Saída")return;const k=String(x.d).slice(0,7);(m[x.item]=m[x.item]||{})[k]=(m[x.item][k]||0)+Number(x.q||0)});P.cpH={de,m,en,me}}
   catch(e){P.cpH={de,m:{},erro:e.message}}if(P.tab==="compras")render()}
 /* cálculo: consumo/mês × (dias para durar + prazo de entrega) ÷ 30, nunca abaixo do mínimo; comprar = meta − saldo − já pedido */
-function cpCalc(i){const c=P.cp;const m3=i.c90/3,m1=i.c30;const mes=c.base==="m3"?m3:c.base==="m1"?m1:Math.max(m3,m1);const dia=mes/30;
-  const meta=Math.max(Math.ceil(dia*(Number(c.durar)+Number(c.prazo))),i.min||0);const ja=cpJaEf(i.id);
-  const sug=Math.max(0,Math.ceil(meta-Math.max(0,i.saldo)-ja));const dura=dia>0?Math.floor(Math.max(0,i.saldo)/dia):null;
+function cpCalc(i){const c=P.cp;const m3=i.c90/3,m1=i.c30;const hm=(P.cpH&&P.cpH.m&&P.cpH.m[i.id])||{};const pico=Math.max(0,...cpMeses().map(k=>hm[k]||0));
+  const mes=c.base==="m3"?m3:c.base==="m1"?m1:c.base==="pico"?Math.max(pico,m3,m1):Math.max(m3,m1);const dia=mes/30;const ja=cpJaEf(i.id);
+  const meta=c.modo==="mes"?Math.ceil(mes):c.modo==="quinzena"?Math.ceil(mes/2):Math.max(Math.ceil(dia*(Number(c.durar)+Number(c.prazo))),i.min||0);
+  const sug=Math.max(0,Math.ceil(c.modo==="repor"?meta-Math.max(0,i.saldo)-ja:meta-ja));const dura=dia>0?Math.floor(Math.max(0,i.saldo)/dia):null;
   const q=P.cpQ[i.id]!=null?Number(P.cpQ[i.id]):sug;const urg=i.saldo<=0||(dura!=null&&dura<Number(c.prazo));
   return Object.assign({},i,{mes,dia,meta,ja,sug,q,dura,urg,sel:P.cpX[i.id]!=null?P.cpX[i.id]:q>0})}
 function cpLista(it){const c=P.cp;return it.filter(i=>!c.cat||i.cat===c.cat).map(cpCalc).filter(i=>c.todos||i.sug>0||i.q>0||i.ja>0)
@@ -363,25 +364,25 @@ function vCompras(it){cpHist();const c=P.cp;const cats=[...new Set(it.map(i=>i.c
   const prox=(c.ult?new Date(c.ult+"T12:00").getTime()+15*864e5>Date.now()?new Date(new Date(c.ult+"T12:00").getTime()+15*864e5):new Date():new Date()).toLocaleDateString("pt-BR");
   const rows=L.map(i=>`<tr class="${i.urg?"cpu":""}"><td><input type="checkbox" id="cx_${esc(i.id)}" ${i.sel?"checked":""}></td>
     <td><b>${esc(i.p)}</b><div class="muted">${esc(i.id)} · ${esc(i.cat)}</div></td>
-    ${ms.map((k,n)=>`<td class="n muted">${H[i.id]&&H[i.id][k]?nf(H[i.id][k]):(P.cpH&&P.cpH.carregando?"…":"0")}</td>`).join("")}
+    ${ms.map((k,n)=>{const sa=H[i.id]&&H[i.id][k]||0,en=(P.cpH&&P.cpH.me&&P.cpH.me[i.id]&&P.cpH.me[i.id][k])||0;return `<td class="n">${P.cpH&&P.cpH.carregando?"…":`${sa?`<span class="cps">−${nf(sa)}</span>`:`<span class="muted">0</span>`}${en?`<div class="cpe">+${nf(en)}</div>`:""}`}</td>`}).join("")}
     <td class="n"><b>${nf(Math.round(i.mes*10)/10)}</b></td><td class="n"><b>${nf(i.saldo)}</b> ${esc(i.un)}</td>
     <td class="n">${i.dura==null?"—":`<span class="${i.urg?"cpr":i.dura<Number(c.durar)?"cpa":""}">${i.dura} d</span>`}</td>
     <td class="n">${nf(i.meta)}</td><td class="n"><input class="in cpi" id="cj_${esc(i.id)}" type="number" min="0" step="1" value="${i.ja||""}" placeholder="0"></td>
     <td class="n"><input class="in cpi cpq" id="cq_${esc(i.id)}" type="number" min="0" step="1" value="${i.q}"></td><td>${esc(i.un)}</td></tr>`).join("");
   return `<div class="box"><h2>Sugestão de compras<span class="sp"></span><span class="muted">${sel.length} item(ns) selecionado(s)</span>
-    <button class="btn sec" data-act="cpXls">Baixar (Excel)</button><button class="btn" data-act="cpReq" ${sel.length?"":"disabled"}>Gerar requisição BC.FO.65</button></h2>
+    ${L.some(i=>i.ja>0)?`<button class="btn sec" data-act="cpLimpaJa" title="Apaga o “já pedido” dos itens desta lista (ex.: requisição de teste ou pedido cancelado)">Limpar “já pedido”</button>`:""}<button class="btn sec" data-act="cpXls">Baixar (Excel)</button><button class="btn" data-act="cpReq" ${sel.length?"":"disabled"}>Gerar requisição BC.FO.65</button></h2>
    <div class="bar cpbar"><label>Categoria<select class="sel" id="cp_cat"><option value="">Todas</option>${cats.map(x=>`<option ${c.cat===x?"selected":""}>${esc(x)}</option>`).join("")}</select></label>
     <label>Durar (dias)<input class="in" id="cp_durar" type="number" min="1" value="${c.durar}" style="width:80px"></label>
     <label>Prazo de entrega (dias)<input class="in" id="cp_prazo" type="number" min="0" value="${c.prazo}" style="width:80px"></label>
-    <label>Consumo usado<select class="sel" id="cp_base"><option value="maior" ${c.base==="maior"?"selected":""}>O maior: média 3 meses ou último mês</option><option value="m3" ${c.base==="m3"?"selected":""}>Média dos últimos 3 meses</option><option value="m1" ${c.base==="m1"?"selected":""}>Últimos 30 dias</option></select></label>
+    <label>Consumo usado<select class="sel" id="cp_base"><option value="maior" ${c.base==="maior"?"selected":""}>O maior: média 3 meses ou último mês</option><option value="m3" ${c.base==="m3"?"selected":""}>Média dos últimos 3 meses</option><option value="m1" ${c.base==="m1"?"selected":""}>Últimos 30 dias</option><option value="pico" ${c.base==="pico"?"selected":""}>Maior mês dos últimos 4 (mais seguro)</option></select></label>
+    <label>Quantidade sugerida<select class="sel" id="cp_modo"><option value="repor" ${c.modo==="repor"?"selected":""}>Repor: durar os dias + prazo, descontando o saldo</option><option value="mes" ${c.modo==="mes"?"selected":""}>Consumo de 1 mês (sem descontar saldo)</option><option value="quinzena" ${c.modo==="quinzena"?"selected":""}>Consumo de 15 dias (pedido quinzenal)</option></select></label>
     <label class="cpck"><input type="checkbox" id="cp_todos" ${c.todos?"checked":""}> mostrar itens que não precisam</label></div>
    <div class="kpis"><div class="kpi ${urg?"r":"g"}"><div class="v">${urg}</div><div class="l">vão faltar antes de a compra chegar (${c.prazo} dias)</div></div>
     <div class="kpi a"><div class="v">${L.filter(i=>i.q>0).length}</div><div class="l">itens para comprar ${c.cat?"em "+esc(c.cat):""}</div></div>
     <div class="kpi"><div class="v" style="font-size:20px">${prox}</div><div class="l">${c.ult?"último pedido "+dBR(c.ult)+" · próximo pedido":"próximo pedido (a cada 15 dias)"}</div></div></div>
-   <div class="tw"><table class="cpt"><tr><th></th><th>Item</th>${ms.map((k,n)=>`<th class="n">${MESES[+k.slice(5)-1]}${n===3?"*":""}</th>`).join("")}<th class="n">Consumo/mês</th><th class="n">Saldo</th><th class="n">Dura</th><th class="n">Meta</th><th class="n">Já pedido</th><th class="n">Comprar</th><th>Und</th></tr>
+   <div class="tw"><table class="cpt"><tr><th></th><th>Item</th>${ms.map((k,n)=>`<th class="n">${MESES[+k.slice(5)-1]}${n===3?"*":""}</th>`).join("")}<th class="n">Consumo/mês</th><th class="n">Saldo</th><th class="n">Dura</th><th class="n">${c.modo==="mes"?"1 mês":c.modo==="quinzena"?"15 dias":"Meta"}</th><th class="n">Já pedido</th><th class="n">Comprar</th><th>Und</th></tr>
    ${rows||`<tr><td colspan="${ms.length+9}" class="muted" style="padding:18px;text-align:center">Nada para comprar com esses filtros. 🎉</td></tr>`}</table></div>
-   <div class="muted" style="margin-top:8px;line-height:1.6">Saídas por mês (* = mês atual, até hoje). <b>Meta</b> = consumo de ${Number(c.durar)+Number(c.prazo)} dias (${c.durar} para durar + ${c.prazo} de prazo de entrega), nunca abaixo do estoque mínimo.
-   <b>Comprar</b> = meta − saldo − já pedido, arredondado para cima; você pode mudar o número antes de gerar a requisição. <b>Já pedido</b> = o que já foi pedido e ainda não chegou: entra sozinho quando você gera a requisição e vai baixando conforme as entradas são lançadas no app (fica salvo neste computador; pode corrigir à mão). Linhas em vermelho acabam antes da entrega.</div></div>
+   <div class="muted" style="margin-top:8px;line-height:1.6">Por mês: <span class="cps">−saídas</span> e <span class="cpe" style="display:inline">+entradas</span> (* = mês atual, até hoje). ${c.modo==="repor"?`<b>Meta</b> = consumo de ${Number(c.durar)+Number(c.prazo)} dias (${c.durar} para durar + ${c.prazo} de prazo de entrega), nunca abaixo do estoque mínimo. <b>Comprar</b> = meta − saldo − já pedido`:`<b>Comprar</b> = consumo de ${c.modo==="mes"?"1 mês":"15 dias"} − já pedido (o saldo não é descontado: bom para manter o ritmo de compra fixo)`}, arredondado para cima; você pode mudar o número antes de gerar a requisição. <b>Já pedido</b> = o que já foi pedido e ainda não chegou: entra sozinho quando você gera a requisição e vai baixando conforme as entradas são lançadas no app (fica salvo neste computador; pode corrigir à mão). Linhas em vermelho acabam antes da entrega.</div></div>
    <div class="box"><h2>Dados da requisição</h2><div class="bar cpbar">
     <label>Setor do solicitante<input class="in" id="cp_setor" value="${esc(c.setor)}"></label></div>
     <div class="muted" style="line-height:1.6">A requisição sai no <b>formulário original BC.FO.65</b>, sem mudar o layout: o sistema escreve só os itens (descrição, código, estoque atual, quantidade e unidade), a data e o setor. Departamento, criticidade, categoria e assinaturas ficam para você marcar à mão. Até 20 itens por folha.</div>
@@ -453,12 +454,12 @@ async function cpRequisicaoPdf(){const it=P.d.itens.map(I).filter(i=>i.ativo);co
     if(w)w.location.href=url;else{const a=document.createElement("a");a.href=url;a.download=nome;a.click()}
     P.msg=`Requisição gerada com ${L.length} item(ns)${L.length>20?" em "+Math.ceil(L.length/20)+" folhas":""}. Marque à mão departamento, criticidade e categoria e assine.`;render()}
   catch(e){if(w)w.close();P.msg="!Não consegui gerar a requisição: "+e.message;render()}}
-const CP={cpReq:()=>cpRequisicaoPdf(),cpForm:()=>cpEscolherForm(),
+const CP={cpReq:()=>cpRequisicaoPdf(),cpLimpaJa:()=>{const L=cpLista(P.d.itens.map(I).filter(i=>i.ativo)).filter(i=>i.ja>0);if(!L.length)return;if(!confirm("Apagar o “já pedido” de "+L.length+" item(ns)"+(P.cp.cat?" de "+P.cp.cat:"")+"? Use quando a requisição foi só um teste ou o pedido foi cancelado."))return;L.forEach(i=>{delete P.cpJa[i.id];delete P.cpQ[i.id];delete P.cpX[i.id]});if(!Object.keys(P.cpJa).length)delete P.cp.ult;cpSalvar();P.msg="“Já pedido” apagado: as quantidades voltaram para a sugestão.";render()},cpForm:()=>cpEscolherForm(),
   cpXls:()=>{const L=cpLista(P.d.itens.map(I).filter(i=>i.ativo));const ms=cpMeses();const H=(P.cpH&&P.cpH.m)||{};
-    baixar("Sugestao_compras_"+(P.cp.cat||"todas").replace(/\W+/g,"_")+"_"+hojeArq()+".xlsx",xlsx("Compras",[{h:"ID",w:11},{h:"Produto",w:44},{h:"Categoria",w:16},{h:"Unidade",w:8},...ms.map(k=>({h:"Saída "+MESES[+k.slice(5)-1],w:10,t:"n1"})),{h:"Consumo/mês",w:12,t:"n1"},{h:"Saldo",w:9,t:"n1"},{h:"Dura (dias)",w:10,t:"i"},{h:"Meta",w:9,t:"n1"},{h:"Já pedido",w:10,t:"n1"},{h:"Comprar",w:10,t:"n1"},{h:"Vai faltar antes da entrega",w:12}],
-      L.map(i=>[i.id,i.p,i.cat,i.un,...ms.map(k=>H[i.id]&&H[i.id][k]||0),Math.round(i.mes*10)/10,i.saldo,i.dura??"",i.meta,i.ja,i.q,i.urg?"SIM":""])))}};
+    baixar("Sugestao_compras_"+(P.cp.cat||"todas").replace(/\W+/g,"_")+"_"+hojeArq()+".xlsx",xlsx("Compras",[{h:"ID",w:11},{h:"Produto",w:44},{h:"Categoria",w:16},{h:"Unidade",w:8},...ms.map(k=>({h:"Saída "+MESES[+k.slice(5)-1],w:10,t:"n1"})),...ms.map(k=>({h:"Entrada "+MESES[+k.slice(5)-1],w:11,t:"n1"})),{h:"Consumo/mês",w:12,t:"n1"},{h:"Saldo",w:9,t:"n1"},{h:"Dura (dias)",w:10,t:"i"},{h:"Meta",w:9,t:"n1"},{h:"Já pedido",w:10,t:"n1"},{h:"Comprar",w:10,t:"n1"},{h:"Vai faltar antes da entrega",w:12}],
+      L.map(i=>[i.id,i.p,i.cat,i.un,...ms.map(k=>H[i.id]&&H[i.id][k]||0),...ms.map(k=>(P.cpH&&P.cpH.me&&P.cpH.me[i.id]&&P.cpH.me[i.id][k])||0),Math.round(i.mes*10)/10,i.saldo,i.dura??"",i.meta,i.ja,i.q,i.urg?"SIM":""])))}};
 document.addEventListener("change",e=>{const t=e.target;if(!t.id)return;
-  if(t.id.startsWith("cp_")){const k=t.id.slice(3);P.cp[k]=t.type==="checkbox"?t.checked:t.value;if(k==="cat"||k==="durar"||k==="prazo"||k==="base"){P.cpQ={};P.cpX={}}cpSalvar();render()}
+  if(t.id.startsWith("cp_")){const k=t.id.slice(3);P.cp[k]=t.type==="checkbox"?t.checked:t.value;if(k==="cat"||k==="durar"||k==="prazo"||k==="base"||k==="modo"){P.cpQ={};P.cpX={}}cpSalvar();render()}
   else if(t.id.startsWith("cq_")){P.cpQ[t.id.slice(3)]=Math.max(0,Math.ceil(Number(t.value)||0));render()}
   else if(t.id.startsWith("cj_")){const id=t.id.slice(3),v=Math.max(0,Number(t.value)||0);if(v)P.cpJa[id]={q:v,d:hojeISO()};else delete P.cpJa[id];delete P.cpQ[id];cpSalvar();render()}
   else if(t.id.startsWith("cx_")){P.cpX[t.id.slice(3)]=t.checked;render()}});
