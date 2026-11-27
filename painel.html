@@ -40,7 +40,7 @@ td.n,th.n{text-align:right;white-space:nowrap}
 tr:hover td{background:#FAFBF7}
 .sd{font-size:12px;font-weight:600;padding:2px 9px;border-radius:10px;white-space:nowrap;display:inline-block}
 .n-ok{background:var(--okL)}.n-atencao{background:var(--warnL);color:#7A5800}.n-critico{background:#FFE0CC;color:#9A3D00}.n-zerado,.n-negativo{background:var(--err);color:#fff}
-.rtd{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle}.rtr{background:var(--err)}.rta{background:#E0A100}.rtg{background:var(--limeD)}.rtsub{width:100%;font-size:12.5px;background:#fafbf7}.rtsub th{font-size:11px}.cps{font-weight:600}.cpe{color:#2e7d32;font-size:11.5px;font-weight:700}.cpbar{gap:14px;align-items:flex-end}.cpbar label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--tx2);font-weight:600}.cpbar label.cpck{flex-direction:row;align-items:center;height:38px}.cpi{width:78px;height:32px;text-align:right}.cpq{font-weight:700;background:var(--limeL)}tr.cpu td{background:var(--errL)}.cpr{color:var(--err);font-weight:700}.cpa{color:#9a6b00;font-weight:700}.btn[disabled]{opacity:.45;cursor:default}
+.lnres{position:absolute;left:0;right:0;top:100%;z-index:5;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:380px;overflow:auto}.lnres:empty{display:none}.lnit{padding:8px 12px;border-bottom:1px solid #eef0ea;cursor:pointer}.lnit:hover,.lnit.on{background:var(--limeL)}.lnp{font-weight:700;font-size:14.5px;line-height:1.3;white-space:normal}.lns{display:flex;gap:6px;font-size:12.5px;color:var(--tx2);margin-top:2px}.rtd{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:middle}.rtr{background:var(--err)}.rta{background:#E0A100}.rtg{background:var(--limeD)}.rtsub{width:100%;font-size:12.5px;background:#fafbf7}.rtsub th{font-size:11px}.cps{font-weight:600}.cpe{color:#2e7d32;font-size:11.5px;font-weight:700}.cpbar{gap:14px;align-items:flex-end}.cpbar label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--tx2);font-weight:600}.cpbar label.cpck{flex-direction:row;align-items:center;height:38px}.cpi{width:78px;height:32px;text-align:right}.cpq{font-weight:700;background:var(--limeL)}tr.cpu td{background:var(--errL)}.cpr{color:var(--err);font-weight:700}.cpa{color:#9a6b00;font-weight:700}.btn[disabled]{opacity:.45;cursor:default}
 .muted{color:var(--tx2);font-size:13px}
 .warn{background:var(--warnL);border:1px solid var(--warn);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:14px}
 .err{background:var(--errL);border:1px solid var(--err);border-radius:10px;padding:10px 14px;margin-bottom:14px}
@@ -492,7 +492,7 @@ function vLancar(it){lnPessoas();const L=P.ln;const hoje=hojeISO();const ids={};
   const linhas=L.linhas.map((x,n)=>{const i=ids[x.id];if(!i)return "";const q=Number(x.q)||0;const dep=aj?q:Math.round((i.saldo+sinal*q)*1000)/1000;const dif=aj?Math.round((q-i.saldo)*1000)/1000:null;
     return `<tr><td><b>${esc(i.p)}</b><div class="muted">${esc(i.id)} · ${esc(i.cat)}${i.end?" · end. "+esc(i.end):""}</div></td><td class="n">${nf(i.saldo)} ${esc(i.un)}</td>
     <td class="n"><input class="in cpi cpq" id="lq_${n}" type="number" min="0" step="any" value="${x.q??""}" placeholder="${aj?"contado":"qtd"}"></td>
-    <td class="n">${x.q===""||x.q==null?"—":aj?`<b class="${dif<0?"cpr":dif>0?"cpe":""}">${dif>0?"+":""}${nf(dif)}</b>`:`<b class="${dep<0?"cpr":""}">${nf(dep)}</b>`}</td>
+    <td class="n" id="ld_${n}">${x.q===""||x.q==null?"—":aj?`<b class="${dif<0?"cpr":dif>0?"cpe":""}">${dif>0?"+":""}${nf(dif)}</b>`:`<b class="${dep<0?"cpr":""}">${nf(dep)}</b>`}</td>
     <td><button class="btn sec" data-act="lnTira" data-v="${n}" style="padding:4px 10px">✕</button></td></tr>`}).join("");
   const pesLbl=L.tipo==="Entrada"?"Fornecedor (opcional)":L.tipo==="Saída"?"Para quem *":L.tipo==="Devolução"?"Quem devolveu *":"";
   const pesTipo=L.tipo==="Entrada"?"Fornecedor":"Colaborador";
@@ -504,15 +504,23 @@ function vLancar(it){lnPessoas();const L=P.ln;const hoje=hojeISO();const ids={};
     ${pesLbl?`<label>${pesLbl}<input class="in" id="ln_pessoa" list="lnPes" value="${esc(L.pessoa)}" placeholder="${L.tipo==="Entrada"?"ex.: fornecedor":"nome da pessoa"}" style="width:260px"><datalist id="lnPes">${nomes.map(n=>`<option value="${esc(n)}">`).join("")}</datalist></label>`:""}
     ${L.tipo==="Entrada"?`<label>NF<input class="in" id="ln_nf" value="${esc(L.nf)}" style="width:130px" placeholder="nº da nota"></label>`:""}
     <label style="flex:1">${aj?"Motivo do ajuste *":"Observação"}<input class="in" id="ln_obs" value="${esc(L.obs)}" style="width:100%" placeholder="${aj?"ex.: inventário de novembro":"opcional"}"></label></div>
-   <div class="bar cpbar" style="margin-top:10px"><label style="flex:1">Adicionar item<input class="in" id="ln_busca" list="lnIt" placeholder="digite o nome ou o código e escolha da lista" style="width:100%" autocomplete="off">
-    <datalist id="lnIt">${it.map(i=>`<option value="${esc(i.id)} — ${esc(i.p)}">${nf(i.saldo)} ${esc(i.un)}</option>`).join("")}</datalist></label></div>
+   <div style="margin-top:10px;position:relative"><label style="display:block;font-size:12px;color:var(--tx2);font-weight:600;margin-bottom:3px">Adicionar item</label>
+    <input class="in" id="ln_q" placeholder="digite parte do nome ou o código (ex.: camisa p faixa)" style="width:100%" autocomplete="off"><div id="ln_res" class="lnres"></div></div>
    ${L.linhas.length?`<div class="tw" style="margin-top:10px"><table><tr><th>Item</th><th class="n">Saldo agora</th><th class="n">${aj?"Contagem física":"Quantidade"}</th><th class="n">${aj?"Diferença":"Saldo depois"}</th><th></th></tr>${linhas}</table></div>`
      :`<div class="muted" style="padding:16px 4px">Nenhum item ainda. Procure acima e escolha para adicionar.</div>`}
    <div class="bar" style="margin-top:12px"><span class="muted">${aj?"No ajuste você informa quanto CONTOU; o sistema lança a diferença (Ajuste + ou −).":L.tipo==="Saída"?"A saída não deixa o saldo ficar negativo.":""}</span><span class="sp"></span>
     ${L.linhas.length?`<button class="btn sec" data-act="lnLimpar">Limpar</button>`:""}<button class="btn" data-act="lnEnviar" ${L.linhas.length&&!L.enviando?"":"disabled"}>${L.enviando?"Lançando…":"Lançar "+(aj?"ajuste":L.tipo.toLowerCase())}</button></div></div>
    <div class="box"><h2>Últimos lançamentos feitos pelo painel <span class="muted" style="font-weight:400;font-size:13px">(no período do filtro)</span></h2>
    ${meus.length?`<div class="tw"><table><tr><th>Data</th><th>Tipo</th><th>Item</th><th class="n">Qtd</th><th>Pessoa / NF</th><th>Quem</th><th>Situação</th><th></th></tr>${meus.map(m=>`<tr${m.st==="Estornado"?' style="opacity:.55"':""}><td>${dBR(m.d)}</td><td>${esc(m.t)}</td><td><b>${esc(m.p)}</b><div class="muted">${esc(m.item)} · ${esc(m.id)}</div></td><td class="n">${nf(m.q)} ${esc(m.un)}</td><td>${esc(m.pes||"")}${m.nf?" · NF "+esc(m.nf):""}</td><td>${esc(m.est||"")}</td><td>${m.st==="Estornado"?"Estornado":"Ativo"}</td><td>${m.st==="Estornado"?"":`<button class="btn sec" data-act="lnEstornar" data-v="${esc(m.id)}" style="padding:4px 10px">Estornar</button>`}</td></tr>`).join("")}</table></div>`:`<div class="muted">Nenhum lançamento pelo painel no período.</div>`}</div>`}
-const LN={lnTipo:v=>{P.ln.tipo=v;P.ln.pessoa="";P.ln.nf="";render()},
+/* busca própria de itens (nome inteiro visível) */
+function lnBuscar(txt){const tk=semAc(txt).split(/[\s()\/,.\-]+/).filter(Boolean);if(!tk.length)return [];
+  return P.d.itens.map(I).filter(i=>i.ativo).filter(i=>{const h=semAc(i.id+" "+i.p+" "+i.cat+" "+(i.end||"")).replace(/[()\/,.\-]+/g," ");return tk.every(t=>h.includes(t))}).slice(0,40)}
+function lnMostrar(){const q=document.getElementById("ln_q"),box=document.getElementById("ln_res");if(!q||!box)return;const r=lnBuscar(q.value);P.lnRes=r;
+  box.innerHTML=!q.value.trim()?"":r.length?r.map((i,n)=>`<div class="lnit${n===0?" on":""}" data-act="lnAdd" data-v="${esc(i.id)}"><div class="lnp">${esc(i.p)}</div><div class="lns"><b>${esc(i.id)}</b> · ${esc(i.cat)}${i.end?" · end. "+esc(i.end):""}<span class="sp"></span><b class="${i.saldo<=0?"cpr":""}">${nf(i.saldo)} ${esc(i.un)}</b></div></div>`).join("")+(r.length===40?`<div class="muted" style="padding:6px 10px">mostrando os 40 primeiros: digite mais para filtrar</div>`:""):`<div class="muted" style="padding:10px">Nenhum item encontrado.</div>`}
+function lnAdicionar(id){const L=P.ln;if(!L.linhas.some(x=>x.id===id))L.linhas.push({id,q:""});render();setTimeout(()=>{const q=document.getElementById("lq_"+L.linhas.findIndex(x=>x.id===id));if(q)q.focus()},30)}
+document.addEventListener("input",e=>{if(e.target.id==="ln_q")lnMostrar()});
+document.addEventListener("keydown",e=>{if(e.target.id!=="ln_q")return;if(e.key==="Enter"&&P.lnRes&&P.lnRes.length){e.preventDefault();lnAdicionar(P.lnRes[0].id)}else if(e.key==="Escape"){e.target.value="";lnMostrar()}});
+const LN={lnAdd:v=>lnAdicionar(v),lnTipo:v=>{P.ln.tipo=v;P.ln.pessoa="";P.ln.nf="";render()},
   lnTira:v=>{P.ln.linhas.splice(Number(v),1);render()},
   lnLimpar:()=>{P.ln.linhas=[];P.ln.obs="";P.ln.pessoa="";P.ln.nf="";render()},
   lnEstornar:async v=>{const id=v;const mot=prompt("Motivo do estorno de "+id+":");if(!mot||!mot.trim())return;
@@ -531,8 +539,10 @@ const LN={lnTipo:v=>{P.ln.tipo=v;P.ln.pessoa="";P.ln.nf="";render()},
       P.msg=`Lançado: ${n} linha(s) de ${L.tipo==="Ajuste"?"ajuste":L.tipo.toLowerCase()}. Saldos atualizados.`;L.linhas=[];L.obs="";L.nf="";if(L.tipo!=="Saída")L.pessoa="";P.pessoas=null}
     catch(e){P.msg="!"+e.message}L.enviando=false;await carregar()}};
 document.addEventListener("change",e=>{const t=e.target;if(!t.id)return;const L=P.ln;
-  if(t.id==="ln_busca"){const id=String(t.value).split(" — ")[0].trim();const ok=P.d.itens.some(r=>r[0]===id&&r[12]);if(ok){if(!L.linhas.some(x=>x.id===id))L.linhas.push({id,q:""});t.value="";render();setTimeout(()=>{const q=document.getElementById("lq_"+L.linhas.findIndex(x=>x.id===id));if(q)q.focus()},30)}return}
-  if(t.id.startsWith("lq_")){const n=Number(t.id.slice(3));if(L.linhas[n])L.linhas[n].q=t.value===""?"":Math.max(0,Number(t.value));render();return}
+  if(t.id.startsWith("lq_")){const n=Number(t.id.slice(3));const x=L.linhas[n];if(!x)return;x.q=t.value===""?"":Math.max(0,Number(t.value));
+    const i=P.d.itens.map(I).find(r=>r.id===x.id);const td=document.getElementById("ld_"+n);if(i&&td){const aj=L.tipo==="Ajuste",q=Number(x.q)||0;const dep=Math.round((i.saldo+(L.tipo==="Saída"?-1:1)*q)*1000)/1000,dif=Math.round((q-i.saldo)*1000)/1000;
+      td.innerHTML=x.q===""?"—":aj?`<b class="${dif<0?"cpr":dif>0?"cpe":""}">${dif>0?"+":""}${nf(dif)}</b>`:`<b class="${dep<0?"cpr":""}">${nf(dep)}</b>`}
+    const bt=document.querySelector('[data-act="lnEnviar"]');if(bt)bt.disabled=!L.linhas.length||L.enviando;return}
   if(t.id==="ln_data")L.data=t.value;else if(t.id==="ln_pessoa")L.pessoa=t.value;else if(t.id==="ln_nf")L.nf=t.value;else if(t.id==="ln_obs")L.obs=t.value});
 /* ===================== RETIRADAS POR PESSOA (EPI, bota, fardamento) ===================== */
 const RTK="almox_retiradas_v1";
